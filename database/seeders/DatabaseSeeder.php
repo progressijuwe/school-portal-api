@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             FacultySeeder::class,
             DepartmentSeeder::class,
             AdminSeeder::class,
+            AcademicSessionSeeder::class,
         ]);
         
         // User::factory(10)->create();
