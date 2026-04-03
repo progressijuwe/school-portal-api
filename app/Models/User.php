@@ -7,11 +7,14 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, HasApiTokens, HasRoles, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -22,6 +25,13 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'profile_photo_url',
+        'profile_photo_public_id',
+        'student_id',
+        'staff_id',
+        'department_id',
+        'study_type',
+        'entry_year',
     ];
 
     /**
@@ -45,5 +55,9 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
     }
 }
