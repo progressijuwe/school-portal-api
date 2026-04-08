@@ -32,6 +32,7 @@ class User extends Authenticatable
         'department_id',
         'study_type',
         'entry_year',
+        'must_change_password',
     ];
 
     /**
@@ -52,8 +53,9 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'email_verified_at'    => 'datetime',
+            'password'             => 'hashed',
+            'must_change_password' => 'boolean',
         ];
     }
     public function department(): BelongsTo

@@ -23,6 +23,7 @@ return new class extends Migration
             $table->unsignedBigInteger('department_id')->nullable();
             $table->string('study_type')->nullable(); 
             $table->year('entry_year')->nullable();
+            $table->boolean('must_change_password')->default(true);
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
             $table->timestamps();

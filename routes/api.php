@@ -6,13 +6,26 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\OptionsController;
+use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Api\Auth\PasswordController;
 use App\Http\Controllers\Api\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Api\Admin\CourseOfferingController as AdminCourseOfferingController;
 use App\Http\Controllers\Api\Admin\EnrollmentController as AdminEnrollmentController;
 
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/auth/change-password', [PasswordController::class, 'change']);
+});
+
 Route::prefix('admin')
     ->middleware(['auth:sanctum', 'role:admin'])
     ->group(function () {
+
+        // User management
+        Route::get('/users',                          [AdminUserController::class, 'index']);
+        Route::post('/users',                         [AdminUserController::class, 'store']);
+        Route::get('/users/{user}',                   [AdminUserController::class, 'show']);
+        Route::post('/users/bulk-import',             [AdminUserController::class, 'bulkImport']);
+        Route::get('/users/csv-template/{role}',      [AdminUserController::class, 'downloadCsvTemplate']);
 
         // Courses
         Route::get('/courses',                      [AdminCourseController::class, 'index']);

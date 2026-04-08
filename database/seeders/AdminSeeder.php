@@ -16,6 +16,7 @@ class AdminSeeder extends Seeder
                 'name'     => 'Super Admin',
                 'email'    => 'admin@aust.edu.ng',
                 'password' => Hash::make('Admin@1234'),
+                'must_change_password' => false,
             ]
         );
 
