@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\Admin\EnrollmentController as AdminEnrollmentContro
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\Lecturer\GradeController as LecturerGradeController;
 use App\Http\Controllers\Api\Admin\GradeController as AdminGradeController;
+use App\Http\Controllers\Api\Admin\VenueController as AdminVenueController;
+use App\Http\Controllers\Api\Admin\TimetableController as AdminTimetableController;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/change-password', [PasswordController::class, 'change']);
@@ -67,6 +69,17 @@ Route::prefix('admin')
         Route::get('/grades',                       [AdminGradeController::class, 'index']);
         Route::get('/grades/pending',               [AdminGradeController::class, 'pending']);
         Route::patch('/grades/{grade}/review',      [AdminGradeController::class, 'review']);
+
+        Route::get('/venues',           [AdminVenueController::class, 'index']);
+        Route::post('/venues',          [AdminVenueController::class, 'store']);
+        Route::get('/venues/{venue}',   [AdminVenueController::class, 'show']);
+        Route::patch('/venues/{venue}', [AdminVenueController::class, 'update']);
+
+        Route::get('/timetable',            [AdminTimetableController::class, 'index']);
+        Route::post('/timetable',           [AdminTimetableController::class, 'store']);
+        Route::get('/timetable/{slot}',     [AdminTimetableController::class, 'show']);
+        Route::patch('/timetable/{slot}',   [AdminTimetableController::class, 'update']);
+        Route::delete('/timetable/{slot}',  [AdminTimetableController::class, 'destroy']);
     });
 
 // Rate limiter — 5 login attempts per minute per IP
