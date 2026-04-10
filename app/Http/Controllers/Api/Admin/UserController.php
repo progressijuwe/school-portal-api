@@ -41,7 +41,10 @@ class UserController extends Controller
 
     public function store(StoreUserRequest $request): JsonResponse
     {
-        $result = $this->userService->createUser($request->validated());
+        $result = $this->userService->createUser(
+            $request->validated(),
+            $request->file('photo')
+        );
 
         return response()->json([
             'success' => true,

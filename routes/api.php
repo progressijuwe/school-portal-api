@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Auth\PasswordController;
 use App\Http\Controllers\Api\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Api\Admin\CourseOfferingController as AdminCourseOfferingController;
 use App\Http\Controllers\Api\Admin\EnrollmentController as AdminEnrollmentController;
+use App\Http\Controllers\Api\ProfileController;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/change-password', [PasswordController::class, 'change']);
@@ -26,6 +27,13 @@ Route::prefix('admin')
         Route::get('/users/{user}',                   [AdminUserController::class, 'show']);
         Route::post('/users/bulk-import',             [AdminUserController::class, 'bulkImport']);
         Route::get('/users/csv-template/{role}',      [AdminUserController::class, 'downloadCsvTemplate']);
+
+        Route::middleware(['auth:sanctum', 'not.admin'])->group(function () {
+            Route::get('/profile',              [ProfileController::class, 'show']);
+            Route::patch('/profile',            [ProfileController::class, 'update']);
+            Route::post('/profile/photo',       [ProfileController::class, 'updatePhoto']);
+            Route::delete('/profile/photo',     [ProfileController::class, 'removePhoto']);
+        });
 
         // Courses
         Route::get('/courses',                      [AdminCourseController::class, 'index']);

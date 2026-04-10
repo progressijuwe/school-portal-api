@@ -22,7 +22,7 @@ class UserResource extends JsonResource
             'profile_photo_url'     => $this->profile_photo_url,
             'student_id'            => $this->when($this->student_id, $this->student_id),
             'staff_id'              => $this->when($this->staff_id, $this->staff_id),
-                'department'        => $this->when(
+            'department'            => $this->when(
                                         $this->relationLoaded('department') && $this->department,
                                         fn() => [
                                             'id'      => $this->department->id,
@@ -32,6 +32,21 @@ class UserResource extends JsonResource
                                     ),
             'study_type'            => $this->when($this->study_type, $this->study_type),
             'entry_year'            => $this->when($this->entry_year, $this->entry_year),
+            'phone'                 => $this->when(
+                                        $this->relationLoaded('profile') && $this->profile,
+                                        fn() => $this->profile->phone
+                                    ),
+            'address'               => $this->when(
+                                        $this->relationLoaded('profile') && $this->profile,
+                                        fn() => $this->profile->address
+                                    ),
+            'emergency_contact'     => $this->when(
+                                        $this->relationLoaded('profile') && $this->profile,
+                                        fn() => [
+                                            'name'  => $this->profile->emergency_contact_name,
+                                            'phone' => $this->profile->emergency_contact_phone,
+                                        ]
+                                    ),
             'must_change_password'  => $this->must_change_password,
             'created_at'            => $this->created_at->toDateTimeString(),
         ];

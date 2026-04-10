@@ -24,6 +24,7 @@ class StoreUserRequest extends FormRequest
                 'min:2000',
                 'max:' . now()->year,
             ],
+            'photo'         => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
         ];
     }
 

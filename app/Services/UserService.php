@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Notifications\UserRegisteredNotification;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -11,13 +12,23 @@ class UserService
 {
     public function __construct
     (
-        protected IdGeneratorService $idGenerator
+        protected IdGeneratorService $idGenerator,
+        protected CloudinaryService  $cloudinary,
     ) {}
 
-    public function createUser(array $data): array
+    public function createUser(array $data, ?UploadedFile $photo = null): array
     {
         $temporaryPassword = $this->generateTemporaryPassword();
         $role              = $data['role'];
+
+        $photoData = [];
+        if ($photo) {
+            $uploaded  = $this->cloudinary->uploadProfilePhoto($photo);
+            $photoData = [
+                'profile_photo_url'       => $uploaded['url'],
+                'profile_photo_public_id' => $uploaded['public_id'],
+            ];
+        }
 
         $user = User::create([
             'name'                => $data['name'],
@@ -37,6 +48,7 @@ class UserService
             'staff_id'            => $role === 'lecturer'
                                         ? $this->idGenerator->generateStaffId($data['department_id'])
                                         : null,
+            ...$photoData,
         ]);
 
         $user->assignRole($role);

@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role'               => RoleMiddleware::class,
             'permission'         => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
+            'not.admin'          => \App\Http\Middleware\EnsureNotAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
