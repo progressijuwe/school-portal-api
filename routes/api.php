@@ -12,10 +12,21 @@ use App\Http\Controllers\Api\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Api\Admin\CourseOfferingController as AdminCourseOfferingController;
 use App\Http\Controllers\Api\Admin\EnrollmentController as AdminEnrollmentController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\Lecturer\GradeController as LecturerGradeController;
+use App\Http\Controllers\Api\Admin\GradeController as AdminGradeController;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/change-password', [PasswordController::class, 'change']);
 });
+
+// Lecturer routes
+Route::prefix('lecturer')
+    ->middleware(['auth:sanctum', 'role:lecturer'])
+    ->group(function () {
+        Route::get('/grades',               [LecturerGradeController::class, 'index']);
+        Route::post('/grades',              [LecturerGradeController::class, 'submit']);
+        Route::patch('/grades/{grade}',     [LecturerGradeController::class, 'update']);
+    });
 
 Route::prefix('admin')
     ->middleware(['auth:sanctum', 'role:admin'])
@@ -51,6 +62,11 @@ Route::prefix('admin')
         // Enrollments
         Route::post('/enrollments',                    [AdminEnrollmentController::class, 'store']);
         Route::patch('/enrollments/{enrollment}/drop', [AdminEnrollmentController::class, 'drop']);
+
+        // Grades
+        Route::get('/grades',                       [AdminGradeController::class, 'index']);
+        Route::get('/grades/pending',               [AdminGradeController::class, 'pending']);
+        Route::patch('/grades/{grade}/review',      [AdminGradeController::class, 'review']);
     });
 
 // Rate limiter — 5 login attempts per minute per IP
