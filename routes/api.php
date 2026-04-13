@@ -16,18 +16,53 @@ use App\Http\Controllers\Api\Lecturer\GradeController as LecturerGradeController
 use App\Http\Controllers\Api\Admin\GradeController as AdminGradeController;
 use App\Http\Controllers\Api\Admin\VenueController as AdminVenueController;
 use App\Http\Controllers\Api\Admin\TimetableController as AdminTimetableController;
+use App\Http\Controllers\Api\Student\StudentController;
+use App\Http\Controllers\Api\Lecturer\LecturerController;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/change-password', [PasswordController::class, 'change']);
 });
 
+// Student Routes
+Route::prefix('student')
+    ->middleware(['auth:sanctum', 'role:student'])
+    ->group(function () {
+        Route::get('/dashboard',                        [StudentController::class, 'dashboard']);
+        Route::get('/courses',                          [StudentController::class, 'courses']);
+        Route::get('/timetable',                        [StudentController::class, 'timetable']);
+        Route::get('/grades',                           [StudentController::class, 'grades']);
+        Route::get('/gpa',                              [StudentController::class, 'gpaRecords']);
+        Route::get('/notifications',                    [StudentController::class, 'notifications']);
+        Route::patch('/notifications/read-all',         [StudentController::class, 'markAllNotificationsRead']);
+        Route::patch('/notifications/{id}/read',        [StudentController::class, 'markNotificationRead']);
+    });
+
 // Lecturer routes
 Route::prefix('lecturer')
     ->middleware(['auth:sanctum', 'role:lecturer'])
     ->group(function () {
+
+        // Dashboard
+        Route::get('/dashboard',    [LecturerController::class, 'dashboard']);
+
+        // Courses
+        Route::get('/courses',      [LecturerController::class, 'courses']);
+
+        // Students per course offering
+        Route::get('/courses/{offering}/students', [LecturerController::class, 'students']);
+
+        // Timetable
+        Route::get('/timetable',    [LecturerController::class, 'timetable']);
+
+        // Grades
         Route::get('/grades',               [LecturerGradeController::class, 'index']);
         Route::post('/grades',              [LecturerGradeController::class, 'submit']);
         Route::patch('/grades/{grade}',     [LecturerGradeController::class, 'update']);
+
+        // Notifications
+        Route::get('/notifications',               [LecturerController::class, 'notifications']);
+        Route::patch('/notifications/read-all',    [LecturerController::class, 'markAllNotificationsRead']);
+        Route::patch('/notifications/{id}/read',   [LecturerController::class, 'markNotificationRead']);
     });
 
 Route::prefix('admin')
