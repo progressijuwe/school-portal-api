@@ -6,7 +6,10 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateProfileRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool 
+    { 
+        return true; 
+    }
 
     public function rules(): array
     {
@@ -14,6 +17,13 @@ class UpdateProfileRequest extends FormRequest
             'name'                    => ['sometimes', 'string', 'max:255'],
             'phone'                   => ['sometimes', 'nullable', 'string', 'max:20'],
             'address'                 => ['sometimes', 'nullable', 'string', 'max:500'],
+            'prefix'                  => [
+                                            'sometimes',
+                                            'string',
+                                            'in:Dr.,Prof.,Mr.,Mrs.,Ms.,Engr.,Rev.',
+                                        ],
+            'highest_qualification'   => ['sometimes', 'string', 'max:100'],
+            'specialization'          => ['sometimes', 'nullable', 'string', 'max:100'],
             'emergency_contact_name'  => ['sometimes', 'nullable', 'string', 'max:255'],
             'emergency_contact_phone' => ['sometimes', 'nullable', 'string', 'max:20'],
         ];

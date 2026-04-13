@@ -24,6 +24,23 @@ class StoreUserRequest extends FormRequest
                 'min:2000',
                 'max:' . now()->year,
             ],
+            'prefix'                => [
+                'required_if:role,lecturer',
+                'nullable',
+                'string',
+                'in:Dr.,Prof.,Mr.,Mrs.,Ms.,Engr.,Rev.',
+            ],
+            'highest_qualification' => [
+                'required_if:role,lecturer',
+                'nullable',
+                'string',
+                'max:100',
+            ],
+            'specialization'        => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
             'photo'         => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
         ];
     }

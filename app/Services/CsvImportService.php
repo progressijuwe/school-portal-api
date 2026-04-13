@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Validator;
 class CsvImportService
 {
     protected array $studentHeaders  = ['name', 'email', 'department_id', 'study_type', 'entry_year'];
-    protected array $lecturerHeaders = ['name', 'email', 'department_id'];
+    protected array $lecturerHeaders = ['name', 'email', 'department_id', 'prefix', 'highest_qualification', 'specialization'];
 
     public function parse(UploadedFile $file, string $role): array
     {
@@ -68,6 +68,12 @@ class CsvImportService
         if ($role === 'student') {
             $rules['study_type'] = ['required', 'in:Undergraduate,Postgraduate'];
             $rules['entry_year'] = ['required', 'digits:4', 'integer', 'min:2000', 'max:' . now()->year];
+        }
+
+        if ($role === 'lecturer') {
+            $rules['prefix'] = ['required', 'in:Dr.,Prof.,Mr.,Mrs.,Ms.,Engr.,Rev.'];
+            $rules['highest_qualification'] = ['required', 'string', 'max:100'];
+            $rules['specialization'] = ['nullable', 'string', 'max:100'];
         }
 
         return Validator::make($data, $rules);

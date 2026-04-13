@@ -125,6 +125,7 @@ RateLimiter::for('login', function (Request $request) {
 Route::prefix('options')->group(function () {
     Route::get('/departments', [OptionsController::class, 'departments']);
     Route::get('/study-types', [OptionsController::class, 'studyTypes']);
+    Route::get('/prefixes',    [OptionsController::class, 'prefixes']);
 });
 
 Route::prefix('auth')->group(function () {

@@ -29,12 +29,11 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        // Update name on users table if provided
         if ($request->has('name')) {
             $user->update(['name' => $request->name]);
         }
 
-        // Update or create profile record
+        // Update contact profile
         $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
             $request->only([
@@ -45,7 +44,23 @@ class ProfileController extends Controller
             ])
         );
 
-        $user->load('department.faculty', 'profile');
+        // Update lecturer profile if applicable
+        if ($user->hasRole('lecturer') && $request->hasAny([
+            'prefix',
+            'highest_qualification',
+            'specialization',
+        ])) {
+            $user->lecturerProfile()->updateOrCreate(
+                ['user_id' => $user->id],
+                $request->only([
+                    'prefix',
+                    'highest_qualification',
+                    'specialization',
+                ])
+            );
+        }
+
+        $user->load('department.faculty', 'profile', 'lecturerProfile');
 
         return response()->json([
             'success' => true,

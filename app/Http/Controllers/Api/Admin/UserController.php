@@ -15,13 +15,13 @@ use Illuminate\Support\Facades\DB;
 class UserController extends Controller
 {
     public function __construct(
-        protected UserService    $userService,
+        protected UserService      $userService,
         protected CsvImportService $csvImportService,
     ) {}
 
     public function index(): JsonResponse
     {
-        $users = User::with('department.faculty')
+        $users = User::with('department.faculty', 'lecturerProfile')
             ->whereHas('roles', fn($q) => $q->whereIn('name', ['student', 'lecturer']))
             ->latest()
             ->paginate(20);
@@ -46,6 +46,8 @@ class UserController extends Controller
             $request->file('photo')
         );
 
+        $result['user']->load('department.faculty', 'profile', 'lecturerProfile');
+
         return response()->json([
             'success' => true,
             'message' => ucfirst($request->role) . ' account created successfully.',
@@ -55,7 +57,7 @@ class UserController extends Controller
 
     public function show(User $user): JsonResponse
     {
-        $user->load('department.faculty');
+        $user->load('department.faculty', 'profile', 'lecturerProfile');
 
         return response()->json([
             'success' => true,
@@ -69,7 +71,6 @@ class UserController extends Controller
         $role   = $request->role;
         $result = $this->csvImportService->parse($request->file('file'), $role);
 
-        // If there was a structural error with the CSV itself
         if (isset($result['error'])) {
             return response()->json([
                 'success' => false,
@@ -80,14 +81,22 @@ class UserController extends Controller
         $created = [];
         $failed  = $result['invalid'];
 
-        // Wrap all creations in a transaction
-        DB::transaction(function () use ($result, $role, &$created) {
-            foreach ($result['valid'] as $row) {
-                $row['role'] = $role;
-                $user        = $this->userService->createUser($row);
-                $created[]   = new UserResource($user['user']);
+        foreach ($result['valid'] as $index => $row) {
+            $row['role'] = $role;
+
+            try {
+                DB::transaction(function () use ($row, &$created) {
+                    $user      = $this->userService->createUser($row);
+                    $created[] = new UserResource($user['user']);
+                });
+            } catch (\Throwable $e) {
+                $failed[] = [
+                    'row'    => $index + 2,
+                    'data'   => $row,
+                    'errors' => [$e->getMessage()],
+                ];
             }
-        });
+        }
 
         return response()->json([
             'success' => true,
@@ -110,11 +119,11 @@ class UserController extends Controller
 
         $headers = $role === 'student'
             ? ['name', 'email', 'department_id', 'study_type', 'entry_year']
-            : ['name', 'email', 'department_id'];
+            : ['name', 'email', 'department_id', 'prefix', 'highest_qualification', 'specialization'];
 
         $example = $role === 'student'
             ? ['John Doe', 'john@uni.edu', '1', 'Undergraduate', '2022']
-            : ['Dr. Jane Smith', 'jane@uni.edu', '1'];
+            : ['Jane Smith', 'jane@uni.edu', '1', 'Dr.', 'PhD Computer Science', 'Artificial Intelligence'];
 
         $filename = "{$role}_import_template.csv";
         $handle   = fopen('php://temp', 'r+');
@@ -127,9 +136,9 @@ class UserController extends Controller
         fclose($handle);
 
         return response()->json([
-            'success'  => true,
-            'message'  => 'CSV template generated.',
-            'data'     => [
+            'success' => true,
+            'message' => 'CSV template generated.',
+            'data'    => [
                 'filename' => $filename,
                 'headers'  => $headers,
                 'content'  => base64_encode($csv),

@@ -32,4 +32,20 @@ class OptionsController extends Controller
             ],
         ]);
     }
+    public function prefixes(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'message' => 'Prefixes retrieved successfully.',
+            'data'    => [
+                'Dr.',
+                'Prof.',
+                'Mr.',
+                'Mrs.',
+                'Ms.',
+                'Engr.',
+                'Rev.',
+            ],
+        ]);
+    }
 }

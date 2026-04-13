@@ -30,6 +30,15 @@ class UserResource extends JsonResource
                                             'faculty' => $this->department->faculty?->name,
                                         ]
                                     ),
+            'lecturer_profile'      => $this->when(
+                                        $this->relationLoaded('lecturerProfile') && $this->lecturerProfile,
+                                        fn() => [
+                                            'prefix'                => $this->lecturerProfile->prefix,
+                                            'highest_qualification' => $this->lecturerProfile->highest_qualification,
+                                            'specialization'        => $this->lecturerProfile->specialization,
+                                            'display_name'          => "{$this->lecturerProfile->prefix} {$this->name}",
+                                        ]
+                                    ),
             'study_type'            => $this->when($this->study_type, $this->study_type),
             'entry_year'            => $this->when($this->entry_year, $this->entry_year),
             'phone'                 => $this->when(
@@ -49,6 +58,7 @@ class UserResource extends JsonResource
                                     ),
             'must_change_password'  => $this->must_change_password,
             'created_at'            => $this->created_at->toDateTimeString(),
+            
         ];
     }
 }

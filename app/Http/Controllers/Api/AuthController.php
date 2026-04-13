@@ -33,6 +33,10 @@ class AuthController extends Controller
             $user->load('department.faculty');
         }
 
+        if ($user->hasRole('lecturer')) {
+            $user->load('lecturerProfile');
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Login successful.',

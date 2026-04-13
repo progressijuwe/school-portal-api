@@ -52,8 +52,18 @@ class UserService
         ]);
 
         $user->assignRole($role);
+
+        // Create lecturer profile if role is lecturer
+        if ($role === 'lecturer') {
+            $user->lecturerProfile()->create([
+                'prefix'                => $data['prefix'],
+                'highest_qualification' => $data['highest_qualification'],
+                'specialization'        => $data['specialization'] ?? null,
+            ]);
+        }
+
         $user->notify(new UserRegisteredNotification($temporaryPassword, $role));
-        $user->load('department.faculty');
+        $user->load('department.faculty', 'lecturerProfile');
 
         return [
             'user'  => $user,
