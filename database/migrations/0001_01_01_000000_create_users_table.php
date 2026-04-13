@@ -15,8 +15,16 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('profile_photo_url')->nullable();
+            $table->string('profile_photo_public_id')->nullable();
+            $table->string('student_id')->nullable()->unique();
+            $table->string('staff_id')->nullable()->unique();
+            $table->unsignedBigInteger('department_id')->nullable();
+            $table->string('study_type')->nullable(); 
+            $table->year('entry_year')->nullable();
+            $table->boolean('must_change_password')->default(true);
+            $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });
