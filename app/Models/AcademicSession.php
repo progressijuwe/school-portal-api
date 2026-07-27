@@ -11,11 +11,19 @@ class AcademicSession extends Model
         'name',
         'start_year',
         'end_year',
+        'first_semester_start',
+        'first_semester_end',
+        'second_semester_start',
+        'second_semester_end',
         'is_current',
     ];
 
     protected $casts = [
-        'is_current' => 'boolean',
+        'is_current'             => 'boolean',
+        'first_semester_start'   => 'date',
+        'first_semester_end'     => 'date',
+        'second_semester_start'  => 'date',
+        'second_semester_end'    => 'date',
     ];
 
     public function courseOfferings(): HasMany
@@ -23,7 +31,6 @@ class AcademicSession extends Model
         return $this->hasMany(CourseOffering::class);
     }
 
-    // Ensure only one session is marked as current at a time.
     public function markAsCurrent(): void
     {
         static::where('is_current', true)->update(['is_current' => false]);

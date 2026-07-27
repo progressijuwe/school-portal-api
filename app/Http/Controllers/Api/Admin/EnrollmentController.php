@@ -43,4 +43,56 @@ class EnrollmentController extends Controller
             'message' => 'Enrollment dropped successfully.',
         ]);
     }
+
+    public function pending(): JsonResponse
+    {
+        $enrollments = Enrollment::where('status', 'pending')
+            ->with('student', 'courseOffering.course', 'courseOffering.academicSession')
+            ->paginate(20);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pending registrations retrieved successfully.',
+            'data'    => EnrollmentResource::collection($enrollments),
+            'meta'    => [
+                'current_page' => $enrollments->currentPage(),
+                'last_page'    => $enrollments->lastPage(),
+                'total'        => $enrollments->total(),
+            ],
+        ]);
+    }
+
+    public function approve(Enrollment $enrollment): JsonResponse
+    {
+        if ($enrollment->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only pending registrations can be approved.',
+            ], 409);
+        }
+
+        $enrollment->update(['status' => 'active']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Registration approved successfully.',
+        ]);
+    }
+
+    public function reject(Enrollment $enrollment): JsonResponse
+    {
+        if ($enrollment->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only pending registrations can be rejected.',
+            ], 409);
+        }
+
+        $enrollment->update(['status' => 'rejected']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Registration rejected.',
+        ]);
+    }
 }

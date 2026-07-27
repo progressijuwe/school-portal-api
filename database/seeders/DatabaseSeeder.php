@@ -19,8 +19,11 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             FacultySeeder::class,
             DepartmentSeeder::class,
-            AdminSeeder::class,
             AcademicSessionSeeder::class,
+            AdminSeeder::class,
+            StudentSeeder::class,
+            LecturerSeeder::class,
+            DemoDataSeeder::class,
         ]);
     }
 }

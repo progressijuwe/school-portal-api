@@ -18,74 +18,74 @@ class DepartmentSeeder extends Seeder
 
             // Faculty of Engineering
             'FENG' => [
-                ['name' => 'Electrical & Electronics Engineering',  'code' => 'EEE'],
-                ['name' => 'Mechanical Engineering',                'code' => 'MEE'],
-                ['name' => 'Civil Engineering',                     'code' => 'CEE'],
-                ['name' => 'Chemical Engineering',                  'code' => 'CHE'],
-                ['name' => 'Petroleum Engineering',                 'code' => 'PET'],
-                ['name' => 'Computer Engineering',                  'code' => 'COE'],
+                ['name' => 'Electrical & Electronics Engineering',  'code' => 'EEE', 'duration_years' => 5],
+                ['name' => 'Mechanical Engineering',                'code' => 'MEE', 'duration_years' => 5],
+                ['name' => 'Civil Engineering',                     'code' => 'CEE', 'duration_years' => 5],
+                ['name' => 'Chemical Engineering',                  'code' => 'CHE', 'duration_years' => 5],
+                ['name' => 'Petroleum Engineering',                 'code' => 'PET', 'duration_years' => 5],
+                ['name' => 'Computer Engineering',                  'code' => 'COE', 'duration_years' => 5],
 
             ],
 
             // Faculty of Computing
             'FCOM' => [
-                ['name' => 'Software Engineering',  'code' => 'SOF'],
-                ['name' => 'Computer Science',      'code' => 'COS'],
-                ['name' => 'Cyber Security',        'code' => 'CYB'],
-                ['name' => 'Information Technology','code' => 'INT'],
+                ['name' => 'Software Engineering',  'code' => 'SOF', 'duration_years' => 4],
+                ['name' => 'Computer Science',      'code' => 'COS', 'duration_years' => 4],
+                ['name' => 'Cyber Security',        'code' => 'CYB', 'duration_years' => 4],
+                ['name' => 'Information Technology','code' => 'INT', 'duration_years' => 4],
             ],
 
             // Faculty of Business
             'FBUS' => [
-                ['name' => 'Business Administration',   'code' => 'BUA'],
-                ['name' => 'Accounting',                'code' => 'ACC'],
-                ['name' => 'Economics',                 'code' => 'ECO'],
-                ['name' => 'Finance',                   'code' => 'FIN'],
-                ['name' => 'Marketing',                 'code' => 'MKT'],
+                ['name' => 'Business Administration',   'code' => 'BUA', 'duration_years' => 4],
+                ['name' => 'Accounting',                'code' => 'ACC', 'duration_years' => 4],
+                ['name' => 'Economics',                 'code' => 'ECO', 'duration_years' => 4],
+                ['name' => 'Finance',                   'code' => 'FIN', 'duration_years' => 4],
+                ['name' => 'Marketing',                 'code' => 'MKT', 'duration_years' => 4],
             ],
 
             // Faculty of Law
             'FLAW' => [
-                ['name' => 'Law', 'code' => 'LAW'],
+                ['name' => 'Law', 'code' => 'LAW', 'duration_years' => 5],
             ],
 
             // Faculty of Medicine & Health Sciences
             'FMED' => [
-                ['name' => 'Medicine & Surgery',    'code' => 'MDS'],
-                ['name' => 'Nursing',               'code' => 'NUR'],
-                ['name' => 'Pharmacy',              'code' => 'PHA'],
-                ['name' => 'Public Health',         'code' => 'PBH'],
+                ['name' => 'Medicine & Surgery',    'code' => 'MDS', 'duration_years' => 6],
+                ['name' => 'Nursing',               'code' => 'NUR', 'duration_years' => 5],
+                ['name' => 'Pharmacy',              'code' => 'PHA', 'duration_years' => 5],
+                ['name' => 'Public Health',         'code' => 'PBH', 'duration_years' => 4],
             ],
 
             // Faculty of Arts & Social Sciences
             'FART' => [
-                ['name' => 'Mass Communication',                'code' => 'MLS'],
-                ['name' => 'Psychology',                        'code' => 'PSY'],
-                ['name' => 'Sociology',                         'code' => 'SOC'],
-                ['name' => 'Political Science',                 'code' => 'POL'],
-                ['name' => 'English & Literary Studies',        'code' => 'ELS'],
-                ['name' => 'History & International Studies',   'code' => 'HIS'],
+                ['name' => 'Mass Communication',                'code' => 'MLS', 'duration_years' => 4],
+                ['name' => 'Psychology',                        'code' => 'PSY', 'duration_years' => 4],
+                ['name' => 'Sociology',                         'code' => 'SOC', 'duration_years' => 4],
+                ['name' => 'Political Science',                 'code' => 'POL', 'duration_years' => 4],
+                ['name' => 'English & Literary Studies',        'code' => 'ELS', 'duration_years' => 4],
+                ['name' => 'History & International Studies',   'code' => 'HIS', 'duration_years' => 4],
             ],
 
             // Faculty of Education
             'FEDU' => [
-                ['name' => 'Education',                     'code' => 'EDU'],
-                ['name' => 'Library & Information Science', 'code' => 'LIS'],
+                ['name' => 'Education',                     'code' => 'EDU', 'duration_years' => 4],
+                ['name' => 'Library & Information Science', 'code' => 'LIS', 'duration_years' => 4],
             ],
 
             // Faculty of Environmental Sciences
             'FENV' => [
-                ['name' => 'Environmental Science',     'code' => 'EVS'],
-                ['name' => 'Geography',                 'code' => 'GEO'],
-                ['name' => 'Architecture',              'code' => 'ARC'],
-                ['name' => 'Urban & Regional Planning', 'code' => 'URP'],
+                ['name' => 'Environmental Science',     'code' => 'EVS', 'duration_years' => 4],
+                ['name' => 'Geography',                 'code' => 'GEO', 'duration_years' => 4],
+                ['name' => 'Architecture',              'code' => 'ARC', 'duration_years' => 5],
+                ['name' => 'Urban & Regional Planning', 'code' => 'URP', 'duration_years' => 5],
             ],
 
             // Faculty of Agriculture
             'FAGR' => [
-                ['name' => 'Agriculture',               'code' => 'AGR'],
-                ['name' => 'Forestry & Wildlife',       'code' => 'FWL'],
-                ['name' => 'Food Science & Technology', 'code' => 'FST'],
+                ['name' => 'Agriculture',               'code' => 'AGR', 'duration_years' => 4],
+                ['name' => 'Forestry & Wildlife',       'code' => 'FWL', 'duration_years' => 4],
+                ['name' => 'Food Science & Technology', 'code' => 'FST', 'duration_years' => 4],
             ],
 
         ];
@@ -102,9 +102,10 @@ class DepartmentSeeder extends Seeder
                 Department::firstOrCreate(
                     ['code' => $dept['code']],
                     [
-                        'faculty_id' => $faculty->id,
-                        'name'       => $dept['name'],
-                        'code'       => $dept['code'],
+                        'faculty_id'     => $faculty->id,
+                        'name'           => $dept['name'],
+                        'code'           => $dept['code'],
+                        'duration_years' => $dept['duration_years'],
                     ]
                 );
             }

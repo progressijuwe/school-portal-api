@@ -49,6 +49,10 @@ class UserResource extends JsonResource
                                         $this->relationLoaded('profile') && $this->profile,
                                         fn() => $this->profile->address
                                     ),
+            'date_of_birth'         => $this->when(
+                                        $this->relationLoaded('profile') && $this->profile,
+                                        fn() => $this->profile->date_of_birth?->toDateString()
+                                    ),
             'emergency_contact'     => $this->when(
                                         $this->relationLoaded('profile') && $this->profile,
                                         fn() => [
