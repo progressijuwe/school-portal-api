@@ -17,6 +17,7 @@ class UpdateProfileRequest extends FormRequest
             'name'                    => ['sometimes', 'string', 'max:255'],
             'phone'                   => ['sometimes', 'nullable', 'string', 'max:20'],
             'address'                 => ['sometimes', 'nullable', 'string', 'max:500'],
+            'date_of_birth'           => ['sometimes', 'nullable', 'date', 'before:today'],
             'prefix'                  => [
                                             'sometimes',
                                             'string',
@@ -33,6 +34,7 @@ class UpdateProfileRequest extends FormRequest
     {
         return [
             'phone.max'                          => 'Phone number must not exceed 20 characters.',
+            'date_of_birth.before'                => 'Date of birth must be in the past.',
             'emergency_contact_phone.max'        => 'Emergency contact phone must not exceed 20 characters.',
             'emergency_contact_relationship.max' => 'Relationship must not exceed 100 characters.',
         ];

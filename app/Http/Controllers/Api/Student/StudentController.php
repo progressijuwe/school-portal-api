@@ -50,32 +50,53 @@ class StudentController extends BaseController
             ->first();
 
         // Overall CGPA — latest GPA record has the most up to date CGPA
-        $latestGpa = GpaRecord::where('student_id', $student->id)
-            ->latest()
-            ->first();
+        $recentGpas = GpaRecord::where('gpa_records.student_id', $student->id)
+            ->join('academic_sessions', 'academic_sessions.id', '=', 'gpa_records.academic_session_id')
+            ->orderByDesc('academic_sessions.start_year')
+            ->orderByRaw("FIELD(gpa_records.semester, 'second', 'first')")
+            ->limit(2)
+            ->select('gpa_records.*')
+            ->get();
+
+        $latestGpa   = $recentGpas->first();
+        $previousGpa = $recentGpas->count() >= 2 ? $recentGpas[1] : null;
+
+        $gpaChange = ($latestGpa && $previousGpa)
+            ? round($latestGpa->gpa - $previousGpa->gpa, 2)
+            : null;
+
+        $cgpaChange = ($latestGpa && $previousGpa)
+            ? round($latestGpa->cgpa - $previousGpa->cgpa, 2)
+            : null;
 
         return response()->json([
             'success' => true,
             'message' => 'Dashboard retrieved successfully.',
             'data'    => [
-                'student'         => [
-                    'id'         => $student->id,
-                    'name'       => $student->name,
-                    'student_id' => $student->student_id,
-                    'department' => $student->department?->name,
-                    'level'      => $student->entry_year
-                                        ? $this->resolveLevel($student->entry_year)
-                                        : null,
+                'student' => [
+                    'id'              => $student->id,
+                    'name'            => $student->name,
+                    'student_id'      => $student->student_id,
+                    'department'      => $student->department?->name,
+                    'level'           => $student->entry_year ? $this->resolveLevel($student->entry_year) : null,
+                    'study_type'      => $student->study_type,
+                    'entry_year'      => $student->entry_year,
+                    'graduation_year' => $student->entry_year && $student->department
+                        ? $student->entry_year + $student->department->duration_years
+                        : null,
                 ],
                 'session'         => [
                     'id'         => $session->id,
                     'name'       => $session->name,
                     'is_current' => $session->is_current,
                 ],
-                'enrolled_courses'    => $enrolledCount,
-                'first_semester_gpa'  => $firstSemesterGpa?->gpa,
-                'second_semester_gpa' => $secondSemesterGpa?->gpa,
-                'cgpa'                => $latestGpa?->cgpa ?? '0.00',
+                'enrolled_courses'          => $enrolledCount,
+                'first_semester_gpa'        => $firstSemesterGpa?->gpa,
+                'second_semester_gpa'       => $secondSemesterGpa?->gpa,
+                'cgpa'                      => $latestGpa?->cgpa ?? '0.00',
+                'cumulative_credit_units'   => $latestGpa?->cumulative_credit_units ?? 0,
+                'gpa_change'                => $gpaChange,
+                'cgpa_change'               => $cgpaChange,
             ],
         ]);
     }
@@ -165,7 +186,13 @@ class StudentController extends BaseController
             'success' => true,
             'message' => 'Timetable retrieved successfully.',
             'data'    => [
-                'session'   => $session->name,
+                'session'   => [
+                    'name'                   => $session->name,
+                    'first_semester_start'   => $session->first_semester_start?->toDateString(),
+                    'first_semester_end'     => $session->first_semester_end?->toDateString(),
+                    'second_semester_start'  => $session->second_semester_start?->toDateString(),
+                    'second_semester_end'    => $session->second_semester_end?->toDateString(),
+                ],
                 'timetable' => $grouped,
             ],
         ]);
@@ -185,9 +212,12 @@ class StudentController extends BaseController
             ], 404);
         }
 
+        $semester = $request->query('semester', 'first'); // default to first if not specified
+
         $enrollments = Enrollment::where('student_id', $student->id)
             ->whereHas('courseOffering', fn($q) =>
                 $q->where('academic_session_id', $session->id)
+                ->where('semester', $semester)
             )
             ->with([
                 'courseOffering.course',
@@ -212,8 +242,9 @@ class StudentController extends BaseController
             'success' => true,
             'message' => 'Grades retrieved successfully.',
             'data'    => [
-                'session' => $session->name,
-                'grades'  => $grades,
+                'session'  => $session->name,
+                'semester' => $semester,
+                'grades'   => $grades,
             ],
         ]);
     }

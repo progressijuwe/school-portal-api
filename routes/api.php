@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\Admin\VenueController as AdminVenueController;
 use App\Http\Controllers\Api\Admin\TimetableController as AdminTimetableController;
 use App\Http\Controllers\Api\Student\StudentController;
 use App\Http\Controllers\Api\Lecturer\LecturerController;
+use App\Http\Controllers\Api\Student\EnrollmentController as StudentEnrollmentController;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/change-password', [PasswordController::class, 'change']);
@@ -35,6 +36,9 @@ Route::prefix('student')
         Route::get('/notifications',                    [StudentController::class, 'notifications']);
         Route::patch('/notifications/read-all',         [StudentController::class, 'markAllNotificationsRead']);
         Route::patch('/notifications/{id}/read',        [StudentController::class, 'markNotificationRead']);
+        Route::get('/available-offerings', [StudentEnrollmentController::class, 'availableOfferings']);
+        Route::post('/enrollments',        [StudentEnrollmentController::class, 'store']);
+        Route::get('/enrollments',         [StudentEnrollmentController::class, 'myEnrollments']);
     });
 
 // Lecturer routes
@@ -76,13 +80,6 @@ Route::prefix('admin')
         Route::post('/users/bulk-import',             [AdminUserController::class, 'bulkImport']);
         Route::get('/users/csv-template/{role}',      [AdminUserController::class, 'downloadCsvTemplate']);
 
-        Route::middleware(['auth:sanctum', 'not.admin'])->group(function () {
-            Route::get('/profile',              [ProfileController::class, 'show']);
-            Route::patch('/profile',            [ProfileController::class, 'update']);
-            Route::post('/profile/photo',       [ProfileController::class, 'updatePhoto']);
-            Route::delete('/profile/photo',     [ProfileController::class, 'removePhoto']);
-        });
-
         // Courses
         Route::get('/courses',                      [AdminCourseController::class, 'index']);
         Route::post('/courses',                     [AdminCourseController::class, 'store']);
@@ -99,6 +96,9 @@ Route::prefix('admin')
         // Enrollments
         Route::post('/enrollments',                    [AdminEnrollmentController::class, 'store']);
         Route::patch('/enrollments/{enrollment}/drop', [AdminEnrollmentController::class, 'drop']);
+        Route::get('/enrollments/pending',              [AdminEnrollmentController::class, 'pending']);
+        Route::patch('/enrollments/{enrollment}/approve', [AdminEnrollmentController::class, 'approve']);
+        Route::patch('/enrollments/{enrollment}/reject',  [AdminEnrollmentController::class, 'reject']);
 
         // Grades
         Route::get('/grades',                       [AdminGradeController::class, 'index']);
@@ -117,15 +117,26 @@ Route::prefix('admin')
         Route::delete('/timetable/{slot}',  [AdminTimetableController::class, 'destroy']);
     });
 
+Route::prefix('profile')
+    ->middleware(['auth:sanctum'])
+    ->group(function () {
+        Route::get('/',              [ProfileController::class, 'show']);
+        Route::patch('/',            [ProfileController::class, 'update']);
+        Route::post('/photo',        [ProfileController::class, 'updatePhoto']);
+        Route::delete('/photo',      [ProfileController::class, 'removePhoto']);
+    });
+
 // Rate limiter — 5 login attempts per minute per IP
 RateLimiter::for('login', function (Request $request) {
     return Limit::perMinute(5)->by($request->ip());
 });
 
 Route::prefix('options')->group(function () {
-    Route::get('/departments', [OptionsController::class, 'departments']);
-    Route::get('/study-types', [OptionsController::class, 'studyTypes']);
-    Route::get('/prefixes',    [OptionsController::class, 'prefixes']);
+    Route::get('/departments',         [OptionsController::class, 'departments']);
+    Route::get('/study-types',         [OptionsController::class, 'studyTypes']);
+    Route::get('/prefixes',            [OptionsController::class, 'prefixes']);
+    Route::get('/academic-sessions',   [OptionsController::class, 'academicSessions']);
+    Route::get('/academic-rules', [OptionsController::class, 'academicRules']);
 });
 
 Route::prefix('auth')->group(function () {

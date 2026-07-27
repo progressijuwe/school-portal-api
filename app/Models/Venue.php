@@ -9,6 +9,7 @@ class Venue extends Model
 {
     protected $fillable = [
         'name',
+        'building',
         'code',
         'type',
         'capacity',

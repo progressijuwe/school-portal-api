@@ -17,6 +17,7 @@ class VenueResource extends JsonResource
         return [
             'id'        => $this->id,
             'name'      => $this->name,
+            'building'  => $this->building,
             'code'      => $this->code,
             'type'      => $this->type,
             'capacity'  => $this->capacity,

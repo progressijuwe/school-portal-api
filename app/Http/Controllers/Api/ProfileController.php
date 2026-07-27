@@ -34,11 +34,12 @@ class ProfileController extends Controller
         }
 
         // Update contact profile
-        $user->profile()->updateOrCreate(
+       $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
             $request->only([
                 'phone',
                 'address',
+                'date_of_birth',
                 'emergency_contact_name',
                 'emergency_contact_phone',
             ])

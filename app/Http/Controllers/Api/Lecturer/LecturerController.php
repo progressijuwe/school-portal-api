@@ -85,15 +85,21 @@ class LecturerController extends BaseController
 
         $offerings = CourseOffering::where('lecturer_id', $lecturer->id)
             ->where('academic_session_id', $session->id)
+            ->withCount(['enrollments' => fn($q) => $q->where('status', 'active')])
             ->with('course.department', 'academicSession')
             ->get();
+
+        $courses = $offerings->map(fn($offering) => [
+            'offering'        => new CourseOfferingResource($offering),
+            'enrolled_count'  => $offering->enrollments_count,
+        ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Courses retrieved successfully.',
             'data'    => [
                 'session' => $session->name,
-                'courses' => CourseOfferingResource::collection($offerings),
+                'courses' => $courses,
             ],
         ]);
     }
