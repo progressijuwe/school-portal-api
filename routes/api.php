@@ -62,6 +62,9 @@ Route::prefix('lecturer')
         Route::get('/grades',               [LecturerGradeController::class, 'index']);
         Route::post('/grades',              [LecturerGradeController::class, 'submit']);
         Route::patch('/grades/{grade}',     [LecturerGradeController::class, 'update']);
+        Route::post('/grades',              [LecturerGradeController::class, 'submit']);
+        Route::post('/grades/batch',        [LecturerGradeController::class, 'batchSubmit']);
+        Route::post('/grades/draft',        [LecturerGradeController::class, 'saveDraft']);
 
         // Notifications
         Route::get('/notifications',               [LecturerController::class, 'notifications']);

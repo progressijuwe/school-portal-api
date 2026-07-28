@@ -13,7 +13,6 @@ class UserService
     public function __construct
     (
         protected IdGeneratorService $idGenerator,
-        protected CloudinaryService  $cloudinary,
     ) {}
 
     public function createUser(array $data, ?UploadedFile $photo = null): array
@@ -22,10 +21,15 @@ class UserService
         $role              = $data['role'];
 
         $photoData = [];
+
         if ($photo) {
-            $uploaded  = $this->cloudinary->uploadProfilePhoto($photo);
+            /** @var \App\Services\CloudinaryService $cloudinary */
+            $cloudinary = app(CloudinaryService::class);
+
+            $uploaded = $cloudinary->uploadProfilePhoto($photo);
+
             $photoData = [
-                'profile_photo_url'       => $uploaded['url'],
+                'profile_photo_url' => $uploaded['url'],
                 'profile_photo_public_id' => $uploaded['public_id'],
             ];
         }

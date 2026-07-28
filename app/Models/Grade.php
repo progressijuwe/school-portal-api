@@ -11,6 +11,9 @@ class Grade extends Model
         'enrollment_id',
         'submitted_by',
         'approved_by',
+        'ca_score',
+        'project_score',
+        'exam_score',
         'score',
         'letter_grade',
         'grade_point',
@@ -21,10 +24,13 @@ class Grade extends Model
     ];
 
     protected $casts = [
-        'score'        => 'decimal:2',
-        'grade_point'  => 'decimal:2',
-        'submitted_at' => 'datetime',
-        'approved_at'  => 'datetime',
+        'score'         => 'decimal:2',
+        'grade_point'   => 'decimal:2',
+        'ca_score'      => 'integer',
+        'project_score' => 'integer',
+        'exam_score'    => 'integer',
+        'submitted_at'  => 'datetime',
+        'approved_at'   => 'datetime',
     ];
 
     public function enrollment(): BelongsTo
