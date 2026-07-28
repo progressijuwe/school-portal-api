@@ -56,6 +56,7 @@ class LecturerController extends BaseController
                     'name'       => $lecturer->name,
                     'staff_id'   => $lecturer->staff_id,
                     'department' => $lecturer->department?->name,
+                    'department_code' => $lecturer->department?->code,
                 ],
                 'session'        => [
                     'id'         => $session->id,
@@ -110,7 +111,6 @@ class LecturerController extends BaseController
     {
         $lecturer = $request->user();
 
-        // Make sure this offering belongs to the lecturer
         if ($offering->lecturer_id !== $lecturer->id) {
             return response()->json([
                 'success' => false,
@@ -122,7 +122,7 @@ class LecturerController extends BaseController
             ->where('status', 'active')
             ->with([
                 'student.department',
-                'grade' => fn($q) => $q->whereIn('status', ['pending', 'approved']),
+                'grade' => fn($q) => $q->whereIn('status', ['draft', 'pending', 'approved']),
             ])
             ->paginate(20);
 
@@ -134,7 +134,7 @@ class LecturerController extends BaseController
                     'title'    => $offering->course->title,
                     'code'     => $offering->course->code,
                 ],
-                'students' => $enrollments->items(),
+                'students' => EnrollmentResource::collection($enrollments->items()),
             ],
             'meta' => [
                 'current_page' => $enrollments->currentPage(),

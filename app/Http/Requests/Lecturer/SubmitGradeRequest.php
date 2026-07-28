@@ -8,24 +8,18 @@ use Illuminate\Validation\Validator;
 
 class SubmitGradeRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
             'enrollment_id' => ['required', 'integer', 'exists:enrollments,id'],
-            'score'         => ['required', 'numeric', 'min:0', 'max:100'],
+            'ca_score'      => ['required', 'numeric', 'min:0', 'max:20'],
+            'project_score' => ['required', 'numeric', 'min:0', 'max:20'],
+            'exam_score'    => ['required', 'numeric', 'min:0', 'max:60'],
         ];
     }
 
@@ -36,7 +30,6 @@ class SubmitGradeRequest extends FormRequest
                 if ($this->enrollment_id) {
                     $enrollment = \App\Models\Enrollment::find($this->enrollment_id);
 
-                    // Make sure enrollment is active
                     if ($enrollment && $enrollment->status !== 'active') {
                         $validator->errors()->add(
                             'enrollment_id',
@@ -44,7 +37,6 @@ class SubmitGradeRequest extends FormRequest
                         );
                     }
 
-                    // Make sure a grade hasn't already been approved
                     if ($enrollment && $enrollment->grade?->status === 'approved') {
                         $validator->errors()->add(
                             'enrollment_id',

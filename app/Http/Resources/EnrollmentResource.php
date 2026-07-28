@@ -30,6 +30,10 @@ class EnrollmentResource extends JsonResource
                                     fn() => new CourseOfferingResource($this->courseOffering)
                                   ),
             'enrolled_at' => $this->created_at->toDateTimeString(),
+            'grade' => $this->when(
+                        $this->relationLoaded('grade') && $this->grade,
+                        fn() => new GradeResource($this->grade)
+                    ),
         ];
     }
 }

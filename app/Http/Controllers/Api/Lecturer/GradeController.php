@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\Lecturer;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Lecturer\SubmitGradeRequest;
+use App\Http\Requests\Lecturer\SaveDraftGradeRequest;
+use App\Http\Requests\Lecturer\BatchSubmitGradeRequest;
 use App\Http\Resources\GradeResource;
 use App\Models\Grade;
 use App\Models\Enrollment;
@@ -41,30 +43,13 @@ class GradeController extends Controller
         ]);
     }
 
+    // Single submit — kept for backward compatibility / single-row resubmission (e.g. after rejection)
     public function submit(SubmitGradeRequest $request): JsonResponse
     {
-        $resolved   = $this->gradeService->resolveGrade($request->score);
-        $enrollment = Enrollment::find($request->enrollment_id);
-
-        // Upsert — allows resubmission if previously rejected
-        $grade = Grade::updateOrCreate(
-            ['enrollment_id' => $request->enrollment_id],
-            [
-                'submitted_by' => $request->user()->id,
-                'score'        => $request->score,
-                'letter_grade' => $resolved['letter_grade'],
-                'grade_point'  => $resolved['grade_point'],
-                'status'       => 'pending',
-                'rejection_reason' => null,
-                'submitted_at' => now(),
-                'approved_at'  => null,
-                'approved_by'  => null,
-            ]
-        );
+        $grade = $this->persistGrade($request->enrollment_id, $request->only(['ca_score', 'project_score', 'exam_score']), 'pending', $request->user()->id);
 
         $grade->load('enrollment.student', 'enrollment.courseOffering.course', 'submittedBy');
 
-        // Notify all admins
         $admins = User::role('admin')->get();
         Notification::send($admins, new GradeSubmittedNotification($grade));
 
@@ -75,9 +60,64 @@ class GradeController extends Controller
         ], 201);
     }
 
+    // Batch submit — used by "Submit Results" on the lecturer results page
+    public function batchSubmit(BatchSubmitGradeRequest $request): JsonResponse
+    {
+        $lecturerId = $request->user()->id;
+        $submitted  = collect();
+
+        foreach ($request->grades as $entry) {
+            $grade = $this->persistGrade(
+                $entry['enrollment_id'],
+                ['ca_score' => $entry['ca_score'], 'project_score' => $entry['project_score'], 'exam_score' => $entry['exam_score']],
+                'pending',
+                $lecturerId
+            );
+            $submitted->push($grade);
+        }
+
+        $submitted->each->load('enrollment.student', 'enrollment.courseOffering.course', 'submittedBy');
+
+        // Notify admins once for the whole batch, not once per grade
+        $admins = User::role('admin')->get();
+        Notification::send($admins, new GradeSubmittedNotification($submitted->first(), $submitted->count()));
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$submitted->count()} grades submitted successfully and are pending approval.",
+            'data'    => GradeResource::collection($submitted),
+        ], 201);
+    }
+
+    // Batch save as draft — no validation guard on enrollment/grade state, no notification
+    public function saveDraft(SaveDraftGradeRequest $request): JsonResponse
+    {
+        $lecturerId = $request->user()->id;
+        $saved      = collect();
+
+        foreach ($request->grades as $entry) {
+            $grade = $this->persistGrade(
+                $entry['enrollment_id'],
+                [
+                    'ca_score'      => $entry['ca_score'] ?? null,
+                    'project_score' => $entry['project_score'] ?? null,
+                    'exam_score'    => $entry['exam_score'] ?? null,
+                ],
+                'draft',
+                $lecturerId
+            );
+            $saved->push($grade);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$saved->count()} draft grades saved.",
+            'data'    => GradeResource::collection($saved),
+        ]);
+    }
+
     public function update(SubmitGradeRequest $request, Grade $grade): JsonResponse
     {
-        // Only allow updates on pending or rejected grades
         if ($grade->status === 'approved') {
             return response()->json([
                 'success' => false,
@@ -85,7 +125,6 @@ class GradeController extends Controller
             ], 409);
         }
 
-        // Make sure the lecturer owns this grade
         if ($grade->submitted_by !== $request->user()->id) {
             return response()->json([
                 'success' => false,
@@ -93,22 +132,10 @@ class GradeController extends Controller
             ], 403);
         }
 
-        $resolved = $this->gradeService->resolveGrade($request->score);
-
-        $grade->update([
-            'score'            => $request->score,
-            'letter_grade'     => $resolved['letter_grade'],
-            'grade_point'      => $resolved['grade_point'],
-            'status'           => 'pending',
-            'rejection_reason' => null,
-            'submitted_at'     => now(),
-            'approved_at'      => null,
-            'approved_by'      => null,
-        ]);
+        $grade = $this->persistGrade($request->enrollment_id, $request->only(['ca_score', 'project_score', 'exam_score']), 'pending', $request->user()->id);
 
         $grade->load('enrollment.student', 'enrollment.courseOffering.course', 'submittedBy');
 
-        // Re-notify admins
         $admins = User::role('admin')->get();
         Notification::send($admins, new GradeSubmittedNotification($grade));
 
@@ -117,5 +144,36 @@ class GradeController extends Controller
             'message' => 'Grade updated and resubmitted for approval.',
             'data'    => new GradeResource($grade),
         ]);
+    }
+
+    // Shared logic for computing total score + resolving letter grade, then upserting
+    protected function persistGrade(int $enrollmentId, array $components, string $status, int $lecturerId): Grade
+    {
+        $caScore      = $components['ca_score'] ?? 0;
+        $projectScore = $components['project_score'] ?? 0;
+        $examScore    = $components['exam_score'] ?? 0;
+        $totalScore   = $caScore + $projectScore + $examScore;
+
+        $resolved = $status === 'pending'
+            ? $this->gradeService->resolveGrade($totalScore)
+            : ['letter_grade' => null, 'grade_point' => null]; // drafts don't get a letter grade yet
+
+        return Grade::updateOrCreate(
+            ['enrollment_id' => $enrollmentId],
+            [
+                'submitted_by'      => $lecturerId,
+                'ca_score'          => $components['ca_score'] ?? null,
+                'project_score'     => $components['project_score'] ?? null,
+                'exam_score'        => $components['exam_score'] ?? null,
+                'score'             => $totalScore,
+                'letter_grade'      => $resolved['letter_grade'],
+                'grade_point'       => $resolved['grade_point'],
+                'status'            => $status,
+                'rejection_reason'  => null,
+                'submitted_at'      => $status === 'pending' ? now() : null,
+                'approved_at'       => null,
+                'approved_by'       => null,
+            ]
+        );
     }
 }
