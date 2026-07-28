@@ -19,6 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
+    /*add prod url */
     'allowed_origins' => [
         'http://localhost:5173',
         'https://student-portal-rust-alpha.vercel.app',
