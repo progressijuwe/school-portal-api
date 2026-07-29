@@ -16,7 +16,7 @@ class ProfileController extends Controller
 
     public function show(Request $request): JsonResponse
     {
-        $user = $request->user()->load('department.faculty', 'profile');
+        $user = $request->user()->load('department.faculty', 'profile', 'lecturerProfile');
 
         return response()->json([
             'success' => true,
@@ -51,14 +51,17 @@ class ProfileController extends Controller
             'highest_qualification',
             'specialization',
         ])) {
-            $user->lecturerProfile()->updateOrCreate(
-                ['user_id' => $user->id],
-                $request->only([
-                    'prefix',
-                    'highest_qualification',
-                    'specialization',
-                ])
+            $lecturerData = array_filter(
+                $request->only(['prefix', 'highest_qualification', 'specialization']),
+                fn($value) => $value !== null && $value !== ''
             );
+
+            if (! empty($lecturerData)) {
+                $user->lecturerProfile()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    $lecturerData
+                );
+            }
         }
 
         $user->load('department.faculty', 'profile', 'lecturerProfile');

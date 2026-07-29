@@ -22,7 +22,6 @@ return [
     /*add prod url */
     'allowed_origins' => [
         'http://localhost:5173',
-        'https://student-portal-rust-alpha.vercel.app',
     ],
 
     'allowed_origins_patterns' => [],

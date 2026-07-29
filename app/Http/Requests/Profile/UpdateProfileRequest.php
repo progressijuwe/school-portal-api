@@ -20,10 +20,11 @@ class UpdateProfileRequest extends FormRequest
             'date_of_birth'           => ['sometimes', 'nullable', 'date', 'before:today'],
             'prefix'                  => [
                                             'sometimes',
+                                            'nullable',
                                             'string',
                                             'in:Dr.,Prof.,Mr.,Mrs.,Ms.,Engr.,Rev.',
                                         ],
-            'highest_qualification'   => ['sometimes', 'string', 'max:100'],
+            'highest_qualification'   => ['sometimes', 'nullable', 'string', 'max:100'],
             'specialization'          => ['sometimes', 'nullable', 'string', 'max:100'],
             'emergency_contact_name'  => ['sometimes', 'nullable', 'string', 'max:255'],
             'emergency_contact_phone' => ['sometimes', 'nullable', 'string', 'max:20'],
