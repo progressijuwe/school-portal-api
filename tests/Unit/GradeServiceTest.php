@@ -5,8 +5,17 @@ namespace Tests\Unit;
 use App\Services\GradeService;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 
+/**
+ * A true unit test: resolveGrade() is a pure function over a constant table,
+ * with no container, no database and no application.
+ *
+ * Extends PHPUnit's TestCase rather than Tests\TestCase deliberately. The base
+ * class seeds roles in setUp(), which is a database read — inheriting it here
+ * made these 25 assertions depend on a migrated schema they never use, and
+ * that is precisely what broke CI.
+ */
 class GradeServiceTest extends TestCase
 {
     private GradeService $service;

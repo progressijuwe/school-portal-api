@@ -21,6 +21,9 @@ class RoleSeeder extends Seeder
             ]);
         }
 
+        // Safe from the test suite too: $this->seed() dispatches through the
+        // db:seed console command, so $this->command is always set. Output is
+        // buffered by the test runner rather than printed per test.
         $this->command->info('Roles seeded.');
     }
 }
