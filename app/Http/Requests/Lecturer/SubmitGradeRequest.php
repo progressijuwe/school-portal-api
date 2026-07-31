@@ -2,49 +2,59 @@
 
 namespace App\Http\Requests\Lecturer;
 
+use App\Http\Requests\Lecturer\Concerns\ValidatesGradeOwnership;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
 class SubmitGradeRequest extends FormRequest
 {
+    use ValidatesGradeOwnership;
+
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->hasRole('lecturer') ?? false;
     }
 
+    /**
+     * @return array<string, ValidationRule|array<mixed>|string>
+     */
     public function rules(): array
     {
         return [
             'enrollment_id' => ['required', 'integer', 'exists:enrollments,id'],
-            'ca_score'      => ['required', 'numeric', 'min:0', 'max:20'],
-            'project_score' => ['required', 'numeric', 'min:0', 'max:20'],
-            'exam_score'    => ['required', 'numeric', 'min:0', 'max:60'],
+            'ca_score' => ['required', 'integer', 'min:0', 'max:'.config('academics.max_ca_score')],
+            'project_score' => ['required', 'integer', 'min:0', 'max:'.config('academics.max_project_score')],
+            'exam_score' => ['required', 'integer', 'min:0', 'max:'.config('academics.max_exam_score')],
         ];
     }
 
+    /**
+     * Ownership, enrollment state and "already approved" all live in
+     * EnrollmentPolicy::grade, so this endpoint and the batch endpoints cannot
+     * drift apart.
+     *
+     * @return array<int, callable>
+     */
     public function after(): array
     {
         return [
-            function (Validator $validator) {
-                if ($this->enrollment_id) {
-                    $enrollment = \App\Models\Enrollment::find($this->enrollment_id);
+            fn (Validator $validator) => $this->assertOwnsEnrollments(
+                $validator,
+                [$this->input('enrollment_id')],
+            ),
+        ];
+    }
 
-                    if ($enrollment && $enrollment->status !== 'active') {
-                        $validator->errors()->add(
-                            'enrollment_id',
-                            'Cannot submit a grade for a dropped or completed enrollment.'
-                        );
-                    }
-
-                    if ($enrollment && $enrollment->grade?->status === 'approved') {
-                        $validator->errors()->add(
-                            'enrollment_id',
-                            'A grade has already been approved for this enrollment.'
-                        );
-                    }
-                }
-            },
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'ca_score.integer' => 'Scores must be whole numbers.',
+            'project_score.integer' => 'Scores must be whole numbers.',
+            'exam_score.integer' => 'Scores must be whole numbers.',
         ];
     }
 }

@@ -23,7 +23,7 @@ class ApproveGradeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'action'           => ['required', 'in:approve,reject'],
+            'action' => ['required', 'in:approve,reject'],
             'rejection_reason' => ['required_if:action,reject', 'nullable', 'string', 'max:500'],
         ];
     }

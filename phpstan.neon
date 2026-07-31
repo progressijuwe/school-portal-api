@@ -1,0 +1,33 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+# There is deliberately NO baseline file.
+#
+# The original baseline held 234 findings, and a real bug hid among them: a
+# `Builder<Enrollment>::atLevel()` call that 500'd every filtered request on the
+# admin registration queue. It sat in the baseline as `method.notFound`,
+# indistinguishable from nine lookalike false positives caused by missing type
+# information on models and API resources.
+#
+# Supplying that type information (relation generics, resource @mixin, and
+# generated @property blocks) removed every false positive, and the remaining
+# real findings were fixed. The suite now passes level 5 clean.
+#
+# Do not reintroduce a baseline. If PHPStan reports something, it is signal.
+
+parameters:
+    paths:
+        - app
+        - config
+        - database
+        - routes
+        - tests
+
+    # Level 5 is the working baseline this codebase passes today. Raise it one
+    # step at a time — never lower it to make a build go green.
+    level: 5
+
+    # Note: missing `use` statements resolve to non-existent classes in the
+    # current namespace — which is what made three endpoints throw a fatal 500
+    # on every call. That class of error is caught from level 0 upward, so this
+    # config would have failed the build before any of it shipped.

@@ -6,7 +6,10 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdatePhotoRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool
+    {
+        return true;
+    }
 
     public function rules(): array
     {
@@ -24,9 +27,9 @@ class UpdatePhotoRequest extends FormRequest
     {
         return [
             'photo.required' => 'Please select a photo to upload.',
-            'photo.image'    => 'The file must be an image.',
-            'photo.mimes'    => 'Only JPEG, JPG, PNG and WebP images are allowed.',
-            'photo.max'      => 'Photo must not exceed 2MB.',
+            'photo.image' => 'The file must be an image.',
+            'photo.mimes' => 'Only JPEG, JPG, PNG and WebP images are allowed.',
+            'photo.max' => 'Photo must not exceed 2MB.',
         ];
     }
 }

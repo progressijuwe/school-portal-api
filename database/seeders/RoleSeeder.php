@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 
@@ -17,11 +16,14 @@ class RoleSeeder extends Seeder
 
         foreach ($roles as $role) {
             Role::firstOrCreate([
-                'name'       => $role,
+                'name' => $role,
                 'guard_name' => 'web',
             ]);
         }
 
+        // Safe from the test suite too: $this->seed() dispatches through the
+        // db:seed console command, so $this->command is always set. Output is
+        // buffered by the test runner rather than printed per test.
         $this->command->info('Roles seeded.');
     }
 }

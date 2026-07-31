@@ -24,17 +24,17 @@ class TimetableController extends Controller
                 WHEN 'friday' THEN 5 
             END")
             ->orderBy('start_time')
-    ->paginate(20);
+            ->paginate(20);
 
         return response()->json([
             'success' => true,
             'message' => 'Timetable retrieved successfully.',
-            'data'    => TimetableSlotResource::collection($slots->items()),
-            'meta'    => [
+            'data' => TimetableSlotResource::collection($slots->items()),
+            'meta' => [
                 'current_page' => $slots->currentPage(),
-                'last_page'    => $slots->lastPage(),
-                'per_page'     => $slots->perPage(),
-                'total'        => $slots->total(),
+                'last_page' => $slots->lastPage(),
+                'per_page' => $slots->perPage(),
+                'total' => $slots->total(),
             ],
         ]);
     }
@@ -47,7 +47,7 @@ class TimetableController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Timetable slot created successfully.',
-            'data'    => new TimetableSlotResource($slot),
+            'data' => new TimetableSlotResource($slot),
         ], 201);
     }
 
@@ -58,7 +58,7 @@ class TimetableController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Timetable slot retrieved successfully.',
-            'data'    => new TimetableSlotResource($slot),
+            'data' => new TimetableSlotResource($slot),
         ]);
     }
 
@@ -70,7 +70,7 @@ class TimetableController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Timetable slot updated successfully.',
-            'data'    => new TimetableSlotResource($slot),
+            'data' => new TimetableSlotResource($slot),
         ]);
     }
 

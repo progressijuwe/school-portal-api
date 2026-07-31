@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\VenueType;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateVenueRequest extends FormRequest
 {
@@ -25,10 +27,10 @@ class UpdateVenueRequest extends FormRequest
         $venueId = $this->route('venue')?->id;
 
         return [
-            'name'      => ['sometimes', 'string', 'max:255'],
-            'code'      => ['sometimes', 'string', 'max:20', Rule::unique('venues', 'code')->ignore($venueId)],
-            'type'      => ['sometimes', 'in:lecture_hall,laboratory,seminar_room,workshop'],
-            'capacity'  => ['sometimes', 'integer', 'min:1'],
+            'name' => ['sometimes', 'string', 'max:255'],
+            'code' => ['sometimes', 'string', 'max:20', Rule::unique('venues', 'code')->ignore($venueId)],
+            'type' => ['sometimes', Rule::enum(VenueType::class)],
+            'capacity' => ['sometimes', 'integer', 'min:1'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

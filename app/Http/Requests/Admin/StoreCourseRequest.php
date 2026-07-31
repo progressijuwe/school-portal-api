@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\CourseType;
+use App\Enums\Semester;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -27,18 +29,18 @@ class StoreCourseRequest extends FormRequest
 
         return [
             'department_id' => ['required', 'integer', 'exists:departments,id'],
-            'title'         => ['required', 'string', 'max:255'],
-            'code'          => [
+            'title' => ['required', 'string', 'max:255'],
+            'code' => [
                 'required',
                 'string',
                 'max:20',
                 Rule::unique('courses', 'code')->ignore($courseId),
             ],
-            'credit_units'  => ['required', 'integer', 'min:1', 'max:6'],
-            'level'         => ['required', 'in:100,200,300,400,500'],
-            'semester'      => ['required', 'in:first,second'],
-            'type'          => ['required', 'in:compulsory,elective'],
-            'description'   => ['nullable', 'string', 'max:1000'],
+            'credit_units' => ['required', 'integer', 'min:1', 'max:6'],
+            'level' => ['required', 'in:100,200,300,400,500'],
+            'semester' => ['required', Rule::enum(Semester::class)],
+            'type' => ['required', Rule::enum(CourseType::class)],
+            'description' => ['nullable', 'string', 'max:1000'],
         ];
     }
 }

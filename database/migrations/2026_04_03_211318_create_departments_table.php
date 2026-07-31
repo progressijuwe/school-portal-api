@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('faculty_id')->constrained()->restrictOnDelete();
             $table->string('name')->unique();
-            $table->string('code', 10)->unique(); 
+            $table->string('code', 10)->unique();
             $table->timestamps();
         });
     }

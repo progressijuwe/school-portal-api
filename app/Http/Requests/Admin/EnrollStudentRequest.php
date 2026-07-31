@@ -26,10 +26,11 @@ class EnrollStudentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'student_id'          => ['required', 'integer', 'exists:users,id'],
-            'course_offering_id'  => ['required', 'integer', 'exists:course_offerings,id'],
+            'student_id' => ['required', 'integer', 'exists:users,id'],
+            'course_offering_id' => ['required', 'integer', 'exists:course_offerings,id'],
         ];
     }
+
     public function after(): array
     {
         return [

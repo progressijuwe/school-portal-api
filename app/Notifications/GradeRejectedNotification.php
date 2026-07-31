@@ -12,7 +12,7 @@ class GradeRejectedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(protected Grade $grade) 
+    public function __construct(protected Grade $grade)
     {
         //
     }
@@ -24,11 +24,11 @@ class GradeRejectedNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $course  = $this->grade->enrollment->courseOffering->course;
+        $course = $this->grade->enrollment->courseOffering->course;
         $student = $this->grade->enrollment->student;
 
         return (new MailMessage)
-            ->subject('Grade Submission Rejected — ' . $course->title)
+            ->subject('Grade Submission Rejected — '.$course->title)
             ->greeting("Hello {$notifiable->name},")
             ->line("Your grade submission for **{$student->name}** in **{$course->title}** has been rejected.")
             ->line("**Reason:** {$this->grade->rejection_reason}")
@@ -39,14 +39,14 @@ class GradeRejectedNotification extends Notification implements ShouldQueue
 
     public function toDatabase(object $notifiable): array
     {
-        $course  = $this->grade->enrollment->courseOffering->course;
+        $course = $this->grade->enrollment->courseOffering->course;
         $student = $this->grade->enrollment->student;
 
         return [
-            'title'   => 'Grade Submission Rejected',
+            'title' => 'Grade Submission Rejected',
             'message' => "Your grade submission for {$student->name} in {$course->title} was rejected. Reason: {$this->grade->rejection_reason}",
-            'type'    => 'grade_rejected',
-            'grade_id'=> $this->grade->id,
+            'type' => 'grade_rejected',
+            'grade_id' => $this->grade->id,
         ];
     }
 }

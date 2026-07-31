@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\Faculty;
+use Illuminate\Database\Seeder;
 
 class FacultySeeder extends Seeder
 {
@@ -18,7 +17,7 @@ class FacultySeeder extends Seeder
             ['name' => 'Faculty of Computing',                 'code' => 'FCOM'],
             ['name' => 'Faculty of Business',                  'code' => 'FBUS'],
             ['name' => 'Faculty of Law',                       'code' => 'FLAW'],
-            ['name' => 'Faculty of Medicine & Health Sciences','code' => 'FMED'],
+            ['name' => 'Faculty of Medicine & Health Sciences', 'code' => 'FMED'],
             ['name' => 'Faculty of Arts & Social Sciences',    'code' => 'FART'],
             ['name' => 'Faculty of Education',                 'code' => 'FEDU'],
             ['name' => 'Faculty of Environmental Sciences',    'code' => 'FENV'],

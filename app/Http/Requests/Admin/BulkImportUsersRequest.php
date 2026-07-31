@@ -6,9 +6,9 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class BulkImportUsersRequest extends FormRequest
 {
-    public function authorize(): bool 
-    { 
-        return true; 
+    public function authorize(): bool
+    {
+        return true;
     }
 
     public function rules(): array
@@ -23,7 +23,7 @@ class BulkImportUsersRequest extends FormRequest
     {
         return [
             'file.mimes' => 'The import file must be a CSV.',
-            'file.max'   => 'The CSV file must not exceed 2MB.',
+            'file.max' => 'The CSV file must not exceed 2MB.',
         ];
     }
 }

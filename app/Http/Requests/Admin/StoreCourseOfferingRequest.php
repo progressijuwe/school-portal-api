@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\Semester;
+use App\Models\CourseOffering;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreCourseOfferingRequest extends FormRequest
 {
@@ -25,10 +28,10 @@ class StoreCourseOfferingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'course_id'           => ['required', 'integer', 'exists:courses,id'],
+            'course_id' => ['required', 'integer', 'exists:courses,id'],
             'academic_session_id' => ['required', 'integer', 'exists:academic_sessions,id'],
-            'lecturer_id'         => ['nullable', 'integer', 'exists:users,id'],
-            'semester'            => ['required', 'in:first,second'],
+            'lecturer_id' => ['nullable', 'integer', 'exists:users,id'],
+            'semester' => ['required', Rule::enum(Semester::class)],
         ];
     }
 
@@ -49,7 +52,7 @@ class StoreCourseOfferingRequest extends FormRequest
                     }
                 }
                 if ($this->course_id && $this->academic_session_id && $this->semester) {
-                    $exists = \App\Models\CourseOffering::where('course_id', $this->course_id)
+                    $exists = CourseOffering::where('course_id', $this->course_id)
                         ->where('academic_session_id', $this->academic_session_id)
                         ->where('semester', $this->semester)
                         ->exists();

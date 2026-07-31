@@ -2,18 +2,16 @@
 
 namespace App\Http\Controllers\Api\Student;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\BaseController;
 use App\Http\Resources\CourseOfferingResource;
 use App\Http\Resources\GpaRecordResource;
 use App\Http\Resources\GradeResource;
 use App\Http\Resources\TimetableSlotResource;
-use App\Models\AcademicSession;
 use App\Models\Enrollment;
 use App\Models\GpaRecord;
 use App\Models\TimetableSlot;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Api\BaseController;
 
 class StudentController extends BaseController
 {
@@ -33,13 +31,12 @@ class StudentController extends BaseController
         // Enrolled courses count for current session
         $enrolledCount = Enrollment::where('student_id', $student->id)
             ->where('status', 'active')
-            ->whereHas('courseOffering', fn($q) =>
-                $q->where('academic_session_id', $session->id)
+            ->whereHas('courseOffering', fn ($q) => $q->where('academic_session_id', $session->id)
             )
             ->count();
 
         // Latest GPA records
-        $firstSemesterGpa  = GpaRecord::where('student_id', $student->id)
+        $firstSemesterGpa = GpaRecord::where('student_id', $student->id)
             ->where('academic_session_id', $session->id)
             ->where('semester', 'first')
             ->first();
@@ -58,7 +55,7 @@ class StudentController extends BaseController
             ->select('gpa_records.*')
             ->get();
 
-        $latestGpa   = $recentGpas->first();
+        $latestGpa = $recentGpas->first();
         $previousGpa = $recentGpas->count() >= 2 ? $recentGpas[1] : null;
 
         $gpaChange = ($latestGpa && $previousGpa)
@@ -72,31 +69,31 @@ class StudentController extends BaseController
         return response()->json([
             'success' => true,
             'message' => 'Dashboard retrieved successfully.',
-            'data'    => [
+            'data' => [
                 'student' => [
-                    'id'              => $student->id,
-                    'name'            => $student->name,
-                    'student_id'      => $student->student_id,
-                    'department'      => $student->department?->name,
-                    'level'           => $student->entry_year ? $this->resolveLevel($student->entry_year) : null,
-                    'study_type'      => $student->study_type,
-                    'entry_year'      => $student->entry_year,
+                    'id' => $student->id,
+                    'name' => $student->name,
+                    'student_id' => $student->student_id,
+                    'department' => $student->department?->name,
+                    'level' => $student->entry_year ? $this->resolveLevel($student->entry_year) : null,
+                    'study_type' => $student->study_type,
+                    'entry_year' => $student->entry_year,
                     'graduation_year' => $student->entry_year && $student->department
                         ? $student->entry_year + $student->department->duration_years
                         : null,
                 ],
-                'session'         => [
-                    'id'         => $session->id,
-                    'name'       => $session->name,
+                'session' => [
+                    'id' => $session->id,
+                    'name' => $session->name,
                     'is_current' => $session->is_current,
                 ],
-                'enrolled_courses'          => $enrolledCount,
-                'first_semester_gpa'        => $firstSemesterGpa?->gpa,
-                'second_semester_gpa'       => $secondSemesterGpa?->gpa,
-                'cgpa'                      => $latestGpa?->cgpa ?? '0.00',
-                'cumulative_credit_units'   => $latestGpa?->cumulative_credit_units ?? 0,
-                'gpa_change'                => $gpaChange,
-                'cgpa_change'               => $cgpaChange,
+                'enrolled_courses' => $enrolledCount,
+                'first_semester_gpa' => $firstSemesterGpa?->gpa,
+                'second_semester_gpa' => $secondSemesterGpa?->gpa,
+                'cgpa' => $latestGpa->cgpa ?? '0.00',
+                'cumulative_credit_units' => $latestGpa->cumulative_credit_units ?? 0,
+                'gpa_change' => $gpaChange,
+                'cgpa_change' => $cgpaChange,
             ],
         ]);
     }
@@ -116,8 +113,7 @@ class StudentController extends BaseController
         }
 
         $enrollments = Enrollment::where('student_id', $student->id)
-            ->whereHas('courseOffering', fn($q) =>
-                $q->where('academic_session_id', $session->id)
+            ->whereHas('courseOffering', fn ($q) => $q->where('academic_session_id', $session->id)
             )
             ->with([
                 'courseOffering.course.department',
@@ -126,23 +122,23 @@ class StudentController extends BaseController
             ])
             ->get();
 
-        $courses = $enrollments->map(fn($enrollment) => [
+        $courses = $enrollments->map(fn ($enrollment) => [
             'enrollment_id' => $enrollment->id,
-            'status'        => $enrollment->status,
-            'offering'      => new CourseOfferingResource($enrollment->courseOffering),
+            'status' => $enrollment->status,
+            'offering' => new CourseOfferingResource($enrollment->courseOffering),
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Courses retrieved successfully.',
-            'data'    => [
+            'data' => [
                 'session' => $session->name,
                 'courses' => $courses,
             ],
         ]);
     }
 
-    // Timetable 
+    // Timetable
 
     public function timetable(Request $request): JsonResponse
     {
@@ -159,8 +155,7 @@ class StudentController extends BaseController
         // Get all course offering IDs the student is enrolled in
         $offeringIds = Enrollment::where('student_id', $student->id)
             ->where('status', 'active')
-            ->whereHas('courseOffering', fn($q) =>
-                $q->where('academic_session_id', $session->id)
+            ->whereHas('courseOffering', fn ($q) => $q->where('academic_session_id', $session->id)
             )
             ->pluck('course_offering_id');
 
@@ -178,27 +173,26 @@ class StudentController extends BaseController
             ->get();
 
         // Group by day for easier frontend rendering
-        $grouped = $slots->groupBy('day')->map(fn($daySlots) =>
-            TimetableSlotResource::collection($daySlots)
+        $grouped = $slots->groupBy('day')->map(fn ($daySlots) => TimetableSlotResource::collection($daySlots)
         );
 
         return response()->json([
             'success' => true,
             'message' => 'Timetable retrieved successfully.',
-            'data'    => [
-                'session'   => [
-                    'name'                   => $session->name,
-                    'first_semester_start'   => $session->first_semester_start?->toDateString(),
-                    'first_semester_end'     => $session->first_semester_end?->toDateString(),
-                    'second_semester_start'  => $session->second_semester_start?->toDateString(),
-                    'second_semester_end'    => $session->second_semester_end?->toDateString(),
+            'data' => [
+                'session' => [
+                    'name' => $session->name,
+                    'first_semester_start' => $session->first_semester_start?->toDateString(),
+                    'first_semester_end' => $session->first_semester_end?->toDateString(),
+                    'second_semester_start' => $session->second_semester_start?->toDateString(),
+                    'second_semester_end' => $session->second_semester_end?->toDateString(),
                 ],
                 'timetable' => $grouped,
             ],
         ]);
     }
 
-    // Grades 
+    // Grades
 
     public function grades(Request $request): JsonResponse
     {
@@ -215,25 +209,24 @@ class StudentController extends BaseController
         $semester = $request->query('semester', 'first'); // default to first if not specified
 
         $enrollments = Enrollment::where('student_id', $student->id)
-            ->whereHas('courseOffering', fn($q) =>
-                $q->where('academic_session_id', $session->id)
+            ->whereHas('courseOffering', fn ($q) => $q->where('academic_session_id', $session->id)
                 ->where('semester', $semester)
             )
             ->with([
                 'courseOffering.course',
                 'courseOffering.academicSession',
-                'grade' => fn($q) => $q->where('status', 'approved'),
+                'grade' => fn ($q) => $q->where('status', 'approved'),
             ])
             ->get();
 
-        $grades = $enrollments->map(fn($enrollment) => [
-            'course'        => [
-                'title'        => $enrollment->courseOffering->course->title,
-                'code'         => $enrollment->courseOffering->course->code,
+        $grades = $enrollments->map(fn ($enrollment) => [
+            'course' => [
+                'title' => $enrollment->courseOffering->course->title,
+                'code' => $enrollment->courseOffering->course->code,
                 'credit_units' => $enrollment->courseOffering->course->credit_units,
-                'semester'     => $enrollment->courseOffering->semester,
+                'semester' => $enrollment->courseOffering->semester,
             ],
-            'grade'         => $enrollment->grade
+            'grade' => $enrollment->grade
                                 ? new GradeResource($enrollment->grade)
                                 : null,
         ]);
@@ -241,15 +234,15 @@ class StudentController extends BaseController
         return response()->json([
             'success' => true,
             'message' => 'Grades retrieved successfully.',
-            'data'    => [
-                'session'  => $session->name,
+            'data' => [
+                'session' => $session->name,
                 'semester' => $semester,
-                'grades'   => $grades,
+                'grades' => $grades,
             ],
         ]);
     }
 
-    // GPA Records 
+    // GPA Records
 
     public function gpaRecords(Request $request): JsonResponse
     {
@@ -261,13 +254,13 @@ class StudentController extends BaseController
             ->get();
 
         // Latest record has the most up to date CGPA
-        $cgpa = $records->first()?->cgpa ?? '0.00';
+        $cgpa = $records->first()->cgpa ?? '0.00';
 
         return response()->json([
             'success' => true,
             'message' => 'GPA records retrieved successfully.',
-            'data'    => [
-                'cgpa'    => $cgpa,
+            'data' => [
+                'cgpa' => $cgpa,
                 'records' => GpaRecordResource::collection($records),
             ],
         ]);
@@ -294,9 +287,9 @@ class StudentController extends BaseController
     protected function resolveLevel(int $entryYear): string
     {
         $yearsElapsed = now()->year - $entryYear;
-        $level        = ($yearsElapsed * 100) + 100;
+        $level = ($yearsElapsed * 100) + 100;
 
         // Cap at 500
-        return min($level, 500) . ' Level';
+        return min($level, 500).' Level';
     }
 }

@@ -2,17 +2,16 @@
 
 namespace App\Http\Controllers\Api\Lecturer;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\BaseController;
 use App\Http\Resources\CourseOfferingResource;
 use App\Http\Resources\EnrollmentResource;
 use App\Http\Resources\TimetableSlotResource;
-use App\Models\AcademicSession;
 use App\Models\CourseOffering;
 use App\Models\Enrollment;
+use App\Models\Grade;
 use App\Models\TimetableSlot;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Api\BaseController;
 
 class LecturerController extends BaseController
 {
@@ -21,7 +20,7 @@ class LecturerController extends BaseController
     public function dashboard(Request $request): JsonResponse
     {
         $lecturer = $request->user();
-        $session  = $this->resolveSession($request);
+        $session = $this->resolveSession($request);
 
         if (! $session) {
             return response()->json([
@@ -35,37 +34,36 @@ class LecturerController extends BaseController
             ->with('course')
             ->get();
 
-        $offeringIds   = $offerings->pluck('id');
+        $offeringIds = $offerings->pluck('id');
         $totalStudents = Enrollment::whereIn('course_offering_id', $offeringIds)
             ->where('status', 'active')
             ->count();
 
-        $pendingGrades = \App\Models\Grade::whereHas('enrollment.courseOffering', fn($q) =>
-                $q->where('lecturer_id', $lecturer->id)
-                  ->where('academic_session_id', $session->id)
-            )
+        $pendingGrades = Grade::whereHas('enrollment.courseOffering', fn ($q) => $q->where('lecturer_id', $lecturer->id)
+            ->where('academic_session_id', $session->id)
+        )
             ->where('status', 'pending')
             ->count();
 
         return response()->json([
             'success' => true,
             'message' => 'Dashboard retrieved successfully.',
-            'data'    => [
+            'data' => [
                 'lecturer' => [
-                    'id'         => $lecturer->id,
-                    'name'       => $lecturer->name,
-                    'staff_id'   => $lecturer->staff_id,
+                    'id' => $lecturer->id,
+                    'name' => $lecturer->name,
+                    'staff_id' => $lecturer->staff_id,
                     'department' => $lecturer->department?->name,
                     'department_code' => $lecturer->department?->code,
                 ],
-                'session'        => [
-                    'id'         => $session->id,
-                    'name'       => $session->name,
+                'session' => [
+                    'id' => $session->id,
+                    'name' => $session->name,
                     'is_current' => $session->is_current,
                 ],
-                'total_courses'        => $offerings->count(),
-                'total_students'       => $totalStudents,
-                'pending_grades'       => $pendingGrades,
+                'total_courses' => $offerings->count(),
+                'total_students' => $totalStudents,
+                'pending_grades' => $pendingGrades,
             ],
         ]);
     }
@@ -75,7 +73,7 @@ class LecturerController extends BaseController
     public function courses(Request $request): JsonResponse
     {
         $lecturer = $request->user();
-        $session  = $this->resolveSession($request);
+        $session = $this->resolveSession($request);
 
         if (! $session) {
             return response()->json([
@@ -86,19 +84,19 @@ class LecturerController extends BaseController
 
         $offerings = CourseOffering::where('lecturer_id', $lecturer->id)
             ->where('academic_session_id', $session->id)
-            ->withCount(['enrollments' => fn($q) => $q->where('status', 'active')])
+            ->withCount(['enrollments' => fn ($q) => $q->where('status', 'active')])
             ->with('course.department', 'academicSession')
             ->get();
 
-        $courses = $offerings->map(fn($offering) => [
-            'offering'        => new CourseOfferingResource($offering),
-            'enrolled_count'  => $offering->enrollments_count,
+        $courses = $offerings->map(fn ($offering) => [
+            'offering' => new CourseOfferingResource($offering),
+            'enrolled_count' => $offering->enrollments_count,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Courses retrieved successfully.',
-            'data'    => [
+            'data' => [
                 'session' => $session->name,
                 'courses' => $courses,
             ],
@@ -122,35 +120,35 @@ class LecturerController extends BaseController
             ->where('status', 'active')
             ->with([
                 'student.department',
-                'grade' => fn($q) => $q->whereIn('status', ['draft', 'pending', 'approved']),
+                'grade' => fn ($q) => $q->whereIn('status', ['draft', 'pending', 'approved']),
             ])
             ->paginate(20);
 
         return response()->json([
             'success' => true,
             'message' => 'Students retrieved successfully.',
-            'data'    => [
-                'course'   => [
-                    'title'    => $offering->course->title,
-                    'code'     => $offering->course->code,
+            'data' => [
+                'course' => [
+                    'title' => $offering->course->title,
+                    'code' => $offering->course->code,
                 ],
                 'students' => EnrollmentResource::collection($enrollments->items()),
             ],
             'meta' => [
                 'current_page' => $enrollments->currentPage(),
-                'last_page'    => $enrollments->lastPage(),
-                'per_page'     => $enrollments->perPage(),
-                'total'        => $enrollments->total(),
+                'last_page' => $enrollments->lastPage(),
+                'per_page' => $enrollments->perPage(),
+                'total' => $enrollments->total(),
             ],
         ]);
     }
 
-    // Timetable 
+    // Timetable
 
     public function timetable(Request $request): JsonResponse
     {
         $lecturer = $request->user();
-        $session  = $this->resolveSession($request);
+        $session = $this->resolveSession($request);
 
         if (! $session) {
             return response()->json([
@@ -176,15 +174,14 @@ class LecturerController extends BaseController
             ->orderBy('start_time')
             ->get();
 
-        $grouped = $slots->groupBy('day')->map(fn($daySlots) =>
-            TimetableSlotResource::collection($daySlots)
+        $grouped = $slots->groupBy('day')->map(fn ($daySlots) => TimetableSlotResource::collection($daySlots)
         );
 
         return response()->json([
             'success' => true,
             'message' => 'Timetable retrieved successfully.',
-            'data'    => [
-                'session'   => $session->name,
+            'data' => [
+                'session' => $session->name,
                 'timetable' => $grouped,
             ],
         ]);
