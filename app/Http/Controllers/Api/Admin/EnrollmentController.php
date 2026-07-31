@@ -2,97 +2,106 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Http\Controllers\Controller;
+use App\Enums\EnrollmentStatus;
+use App\Http\Controllers\Api\BaseController;
 use App\Http\Requests\Admin\EnrollStudentRequest;
 use App\Http\Resources\EnrollmentResource;
 use App\Models\Enrollment;
 use Illuminate\Http\JsonResponse;
 
-class EnrollmentController extends Controller
+class EnrollmentController extends BaseController
 {
+    /**
+     * @var array<int, string>
+     */
+    private const RESPONSE_RELATIONS = [
+        'student',
+        'courseOffering.course',
+        'courseOffering.academicSession',
+    ];
+
     public function store(EnrollStudentRequest $request): JsonResponse
     {
+        // An admin enrolling a student directly bypasses the approval queue.
         $enrollment = Enrollment::create([
-            'student_id'         => $request->student_id,
-            'course_offering_id' => $request->course_offering_id,
-            'status'             => 'active',
+            'student_id' => $request->integer('student_id'),
+            'course_offering_id' => $request->integer('course_offering_id'),
+            'status' => EnrollmentStatus::Active,
         ]);
 
-        $enrollment->load('student', 'courseOffering.course', 'courseOffering.academicSession');
+        $enrollment->load(self::RESPONSE_RELATIONS);
 
         return response()->json([
             'success' => true,
             'message' => 'Student enrolled successfully.',
-            'data'    => new EnrollmentResource($enrollment),
+            'data' => new EnrollmentResource($enrollment),
         ], 201);
+    }
+
+    public function pending(): JsonResponse
+    {
+        $enrollments = Enrollment::where('status', EnrollmentStatus::Pending)
+            ->with(self::RESPONSE_RELATIONS)
+            ->latest()
+            ->paginate(20);
+
+        return $this->paginated(
+            $enrollments,
+            EnrollmentResource::class,
+            'Pending registrations retrieved successfully.'
+        );
+    }
+
+    public function approve(Enrollment $enrollment): JsonResponse
+    {
+        return $this->transition($enrollment, EnrollmentStatus::Active, 'approved');
+    }
+
+    public function reject(Enrollment $enrollment): JsonResponse
+    {
+        return $this->transition($enrollment, EnrollmentStatus::Rejected, 'rejected');
     }
 
     public function drop(Enrollment $enrollment): JsonResponse
     {
-        if ($enrollment->status === 'dropped') {
+        if ($enrollment->status === EnrollmentStatus::Dropped) {
             return response()->json([
                 'success' => false,
                 'message' => 'This enrollment has already been dropped.',
             ], 409);
         }
 
-        $enrollment->update(['status' => 'dropped']);
+        $enrollment->update(['status' => EnrollmentStatus::Dropped]);
+        $enrollment->load(self::RESPONSE_RELATIONS);
 
         return response()->json([
             'success' => true,
             'message' => 'Enrollment dropped successfully.',
+            'data' => new EnrollmentResource($enrollment),
         ]);
     }
 
-    public function pending(): JsonResponse
+    /**
+     * Approve and reject share one state machine: only a pending registration
+     * can move. Both return the updated resource so the frontend can patch its
+     * cache in place instead of refetching the whole queue.
+     */
+    private function transition(Enrollment $enrollment, EnrollmentStatus $to, string $verb): JsonResponse
     {
-        $enrollments = Enrollment::where('status', 'pending')
-            ->with('student', 'courseOffering.course', 'courseOffering.academicSession')
-            ->paginate(20);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Pending registrations retrieved successfully.',
-            'data'    => EnrollmentResource::collection($enrollments),
-            'meta'    => [
-                'current_page' => $enrollments->currentPage(),
-                'last_page'    => $enrollments->lastPage(),
-                'total'        => $enrollments->total(),
-            ],
-        ]);
-    }
-
-    public function approve(Enrollment $enrollment): JsonResponse
-    {
-        if ($enrollment->status !== 'pending') {
+        if ($enrollment->status !== EnrollmentStatus::Pending) {
             return response()->json([
                 'success' => false,
-                'message' => 'Only pending registrations can be approved.',
+                'message' => "Only pending registrations can be {$verb}.",
             ], 409);
         }
 
-        $enrollment->update(['status' => 'active']);
+        $enrollment->update(['status' => $to]);
+        $enrollment->load(self::RESPONSE_RELATIONS);
 
         return response()->json([
             'success' => true,
-            'message' => 'Registration approved successfully.',
-        ]);
-    }
-
-    public function reject(Enrollment $enrollment): JsonResponse
-    {
-        if ($enrollment->status !== 'pending') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Only pending registrations can be rejected.',
-            ], 409);
-        }
-
-        $enrollment->update(['status' => 'rejected']);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Registration rejected.',
+            'message' => "Registration {$verb} successfully.",
+            'data' => new EnrollmentResource($enrollment),
         ]);
     }
 }

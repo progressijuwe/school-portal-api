@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\Department;
 use App\Models\Faculty;
+use Illuminate\Database\Seeder;
 
 class DepartmentSeeder extends Seeder
 {
@@ -32,7 +31,7 @@ class DepartmentSeeder extends Seeder
                 ['name' => 'Software Engineering',  'code' => 'SOF', 'duration_years' => 4],
                 ['name' => 'Computer Science',      'code' => 'COS', 'duration_years' => 4],
                 ['name' => 'Cyber Security',        'code' => 'CYB', 'duration_years' => 4],
-                ['name' => 'Information Technology','code' => 'INT', 'duration_years' => 4],
+                ['name' => 'Information Technology', 'code' => 'INT', 'duration_years' => 4],
             ],
 
             // Faculty of Business
@@ -95,6 +94,7 @@ class DepartmentSeeder extends Seeder
 
             if (! $faculty) {
                 $this->command->warn("Faculty with code {$facultyCode} not found. Skipping.");
+
                 continue;
             }
 
@@ -102,9 +102,9 @@ class DepartmentSeeder extends Seeder
                 Department::firstOrCreate(
                     ['code' => $dept['code']],
                     [
-                        'faculty_id'     => $faculty->id,
-                        'name'           => $dept['name'],
-                        'code'           => $dept['code'],
+                        'faculty_id' => $faculty->id,
+                        'name' => $dept['name'],
+                        'code' => $dept['code'],
                         'duration_years' => $dept['duration_years'],
                     ]
                 );

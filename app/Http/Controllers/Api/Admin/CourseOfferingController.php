@@ -19,12 +19,12 @@ class CourseOfferingController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Course offerings retrieved successfully.',
-            'data'    => CourseOfferingResource::collection($offerings->items()),
-            'meta'    => [
+            'data' => CourseOfferingResource::collection($offerings->items()),
+            'meta' => [
                 'current_page' => $offerings->currentPage(),
-                'last_page'    => $offerings->lastPage(),
-                'per_page'     => $offerings->perPage(),
-                'total'        => $offerings->total(),
+                'last_page' => $offerings->lastPage(),
+                'per_page' => $offerings->perPage(),
+                'total' => $offerings->total(),
             ],
         ]);
     }
@@ -37,7 +37,7 @@ class CourseOfferingController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Course offering created successfully.',
-            'data'    => new CourseOfferingResource($offering),
+            'data' => new CourseOfferingResource($offering),
         ], 201);
     }
 
@@ -48,7 +48,7 @@ class CourseOfferingController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Course offering retrieved successfully.',
-            'data'    => new CourseOfferingResource($offering),
+            'data' => new CourseOfferingResource($offering),
         ]);
     }
 }

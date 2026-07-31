@@ -1,153 +1,191 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\OptionsController;
-use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
-use App\Http\Controllers\Api\Auth\PasswordController;
 use App\Http\Controllers\Api\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Api\Admin\CourseOfferingController as AdminCourseOfferingController;
+use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\Admin\EnrollmentController as AdminEnrollmentController;
-use App\Http\Controllers\Api\ProfileController;
-use App\Http\Controllers\Api\Lecturer\GradeController as LecturerGradeController;
 use App\Http\Controllers\Api\Admin\GradeController as AdminGradeController;
-use App\Http\Controllers\Api\Admin\VenueController as AdminVenueController;
+use App\Http\Controllers\Api\Admin\RegistrationReviewController;
+use App\Http\Controllers\Api\Admin\ResultReviewController;
 use App\Http\Controllers\Api\Admin\TimetableController as AdminTimetableController;
-use App\Http\Controllers\Api\Student\StudentController;
+use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Api\Admin\VenueController as AdminVenueController;
+use App\Http\Controllers\Api\Auth\PasswordController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\Lecturer\GradeController as LecturerGradeController;
 use App\Http\Controllers\Api\Lecturer\LecturerController;
+use App\Http\Controllers\Api\OptionsController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\Student\EnrollmentController as StudentEnrollmentController;
+use App\Http\Controllers\Api\Student\StudentController;
+use Illuminate\Support\Facades\Route;
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/auth/change-password', [PasswordController::class, 'change']);
+/*
+|--------------------------------------------------------------------------
+| Authentication
+|--------------------------------------------------------------------------
+|
+| The `login` limiter is defined in AppServiceProvider and keyed by email +
+| IP. The previous inline `throttle:5,1` was keyed on IP alone, and shadowed a
+| named limiter that was declared here but never referenced by any route.
+|
+*/
+
+Route::prefix('auth')->group(function () {
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post('/change-password', [PasswordController::class, 'change']);
+    });
 });
 
-// Student Routes
+/*
+|--------------------------------------------------------------------------
+| Public reference data
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('options')->group(function () {
+    Route::get('/departments', [OptionsController::class, 'departments']);
+    Route::get('/study-types', [OptionsController::class, 'studyTypes']);
+    Route::get('/prefixes', [OptionsController::class, 'prefixes']);
+    Route::get('/academic-sessions', [OptionsController::class, 'academicSessions']);
+    Route::get('/academic-rules', [OptionsController::class, 'academicRules']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Profile — every authenticated role
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('profile')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [ProfileController::class, 'show']);
+    Route::patch('/', [ProfileController::class, 'update']);
+    Route::post('/photo', [ProfileController::class, 'updatePhoto'])->middleware('throttle:heavy');
+    Route::delete('/photo', [ProfileController::class, 'removePhoto']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Student
+|--------------------------------------------------------------------------
+*/
+
 Route::prefix('student')
     ->middleware(['auth:sanctum', 'role:student'])
     ->group(function () {
-        Route::get('/dashboard',                        [StudentController::class, 'dashboard']);
-        Route::get('/courses',                          [StudentController::class, 'courses']);
-        Route::get('/timetable',                        [StudentController::class, 'timetable']);
-        Route::get('/grades',                           [StudentController::class, 'grades']);
-        Route::get('/gpa',                              [StudentController::class, 'gpaRecords']);
-        Route::get('/notifications',                    [StudentController::class, 'notifications']);
-        Route::patch('/notifications/read-all',         [StudentController::class, 'markAllNotificationsRead']);
-        Route::patch('/notifications/{id}/read',        [StudentController::class, 'markNotificationRead']);
+        Route::get('/dashboard', [StudentController::class, 'dashboard']);
+        Route::get('/courses', [StudentController::class, 'courses']);
+        Route::get('/timetable', [StudentController::class, 'timetable']);
+        Route::get('/grades', [StudentController::class, 'grades']);
+        Route::get('/gpa', [StudentController::class, 'gpaRecords']);
+
         Route::get('/available-offerings', [StudentEnrollmentController::class, 'availableOfferings']);
-        Route::post('/enrollments',        [StudentEnrollmentController::class, 'store']);
-        Route::get('/enrollments',         [StudentEnrollmentController::class, 'myEnrollments']);
+        Route::post('/enrollments', [StudentEnrollmentController::class, 'store']);
+        Route::get('/enrollments', [StudentEnrollmentController::class, 'myEnrollments']);
+
+        Route::get('/notifications', [StudentController::class, 'notifications']);
+        Route::patch('/notifications/read-all', [StudentController::class, 'markAllNotificationsRead']);
+        Route::patch('/notifications/{id}/read', [StudentController::class, 'markNotificationRead']);
     });
 
-// Lecturer routes
+/*
+|--------------------------------------------------------------------------
+| Lecturer
+|--------------------------------------------------------------------------
+*/
+
 Route::prefix('lecturer')
     ->middleware(['auth:sanctum', 'role:lecturer'])
     ->group(function () {
-
-        // Dashboard
-        Route::get('/dashboard',    [LecturerController::class, 'dashboard']);
-
-        // Courses
-        Route::get('/courses',      [LecturerController::class, 'courses']);
-
-        // Students per course offering
+        Route::get('/dashboard', [LecturerController::class, 'dashboard']);
+        Route::get('/courses', [LecturerController::class, 'courses']);
         Route::get('/courses/{offering}/students', [LecturerController::class, 'students']);
+        Route::get('/timetable', [LecturerController::class, 'timetable']);
 
-        // Timetable
-        Route::get('/timetable',    [LecturerController::class, 'timetable']);
+        // Ownership of the target enrollment is enforced by EnrollmentPolicy
+        // via the ValidatesGradeOwnership trait on each FormRequest.
+        Route::get('/grades', [LecturerGradeController::class, 'index']);
+        Route::post('/grades', [LecturerGradeController::class, 'submit']);
+        Route::post('/grades/batch', [LecturerGradeController::class, 'batchSubmit']);
+        Route::post('/grades/draft', [LecturerGradeController::class, 'saveDraft']);
+        Route::patch('/grades/{grade}', [LecturerGradeController::class, 'update']);
 
-        // Grades
-        Route::get('/grades',               [LecturerGradeController::class, 'index']);
-        Route::post('/grades',              [LecturerGradeController::class, 'submit']);
-        Route::patch('/grades/{grade}',     [LecturerGradeController::class, 'update']);
-        Route::post('/grades',              [LecturerGradeController::class, 'submit']);
-        Route::post('/grades/batch',        [LecturerGradeController::class, 'batchSubmit']);
-        Route::post('/grades/draft',        [LecturerGradeController::class, 'saveDraft']);
-
-        // Notifications
-        Route::get('/notifications',               [LecturerController::class, 'notifications']);
-        Route::patch('/notifications/read-all',    [LecturerController::class, 'markAllNotificationsRead']);
-        Route::patch('/notifications/{id}/read',   [LecturerController::class, 'markNotificationRead']);
+        Route::get('/notifications', [LecturerController::class, 'notifications']);
+        Route::patch('/notifications/read-all', [LecturerController::class, 'markAllNotificationsRead']);
+        Route::patch('/notifications/{id}/read', [LecturerController::class, 'markNotificationRead']);
     });
+
+/*
+|--------------------------------------------------------------------------
+| Admin
+|--------------------------------------------------------------------------
+*/
 
 Route::prefix('admin')
     ->middleware(['auth:sanctum', 'role:admin'])
     ->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index']);
+        Route::get('/activity', [AdminDashboardController::class, 'activity']);
 
-        // User management
-        Route::get('/users',                          [AdminUserController::class, 'index']);
-        Route::post('/users',                         [AdminUserController::class, 'store']);
-        Route::get('/users/{user}',                   [AdminUserController::class, 'show']);
-        Route::post('/users/bulk-import',             [AdminUserController::class, 'bulkImport']);
-        Route::get('/users/csv-template/{role}',      [AdminUserController::class, 'downloadCsvTemplate']);
+        // Users — static segments are declared before /{user} so a literal path
+        // can never be swallowed by the wildcard.
+        Route::get('/users', [AdminUserController::class, 'index']);
+        Route::post('/users', [AdminUserController::class, 'store']);
+        Route::post('/users/bulk-import', [AdminUserController::class, 'bulkImport'])->middleware('throttle:heavy');
+        Route::get('/users/csv-template/{role}', [AdminUserController::class, 'downloadCsvTemplate']);
+        Route::get('/users/{user}', [AdminUserController::class, 'show']);
+        Route::patch('/users/{user}', [AdminUserController::class, 'update']);
+        Route::delete('/users/{user}', [AdminUserController::class, 'destroy']);
+        Route::get('/users/{user}/summary', [AdminUserController::class, 'summary']);
+        Route::get('/users/{user}/grades', [AdminUserController::class, 'studentGrades']);
+        Route::get('/users/{user}/courses', [AdminUserController::class, 'lecturerCourses']);
 
         // Courses
-        Route::get('/courses',                      [AdminCourseController::class, 'index']);
-        Route::post('/courses',                     [AdminCourseController::class, 'store']);
-        Route::get('/courses/{course}',             [AdminCourseController::class, 'show']);
-        Route::patch('/courses/{course}',           [AdminCourseController::class, 'update']);
-        Route::patch('/courses/{course}/deactivate',[AdminCourseController::class, 'deactivate']);
-        Route::patch('/courses/{course}/activate',  [AdminCourseController::class, 'activate']);
+        Route::get('/courses', [AdminCourseController::class, 'index']);
+        Route::post('/courses', [AdminCourseController::class, 'store']);
+        Route::get('/courses/{course}', [AdminCourseController::class, 'show']);
+        Route::patch('/courses/{course}', [AdminCourseController::class, 'update']);
+        Route::patch('/courses/{course}/deactivate', [AdminCourseController::class, 'deactivate']);
+        Route::patch('/courses/{course}/activate', [AdminCourseController::class, 'activate']);
 
-        // Course Offerings
-        Route::get('/offerings',            [AdminCourseOfferingController::class, 'index']);
-        Route::post('/offerings',           [AdminCourseOfferingController::class, 'store']);
+        // Course offerings
+        Route::get('/offerings', [AdminCourseOfferingController::class, 'index']);
+        Route::post('/offerings', [AdminCourseOfferingController::class, 'store']);
         Route::get('/offerings/{offering}', [AdminCourseOfferingController::class, 'show']);
 
-        // Enrollments
-        Route::post('/enrollments',                    [AdminEnrollmentController::class, 'store']);
-        Route::patch('/enrollments/{enrollment}/drop', [AdminEnrollmentController::class, 'drop']);
-        Route::get('/enrollments/pending',              [AdminEnrollmentController::class, 'pending']);
+        // Enrollments — /registrations is the review screen (grouped by
+        // student); /enrollments is the flat resource.
+        Route::get('/registrations', [RegistrationReviewController::class, 'index']);
+        Route::patch('/registrations/bulk-review', [RegistrationReviewController::class, 'bulkReview']);
+
+        Route::get('/enrollments/pending', [AdminEnrollmentController::class, 'pending']);
+        Route::post('/enrollments', [AdminEnrollmentController::class, 'store']);
         Route::patch('/enrollments/{enrollment}/approve', [AdminEnrollmentController::class, 'approve']);
-        Route::patch('/enrollments/{enrollment}/reject',  [AdminEnrollmentController::class, 'reject']);
+        Route::patch('/enrollments/{enrollment}/reject', [AdminEnrollmentController::class, 'reject']);
+        Route::patch('/enrollments/{enrollment}/drop', [AdminEnrollmentController::class, 'drop']);
 
-        // Grades
-        Route::get('/grades',                       [AdminGradeController::class, 'index']);
-        Route::get('/grades/pending',               [AdminGradeController::class, 'pending']);
-        Route::patch('/grades/{grade}/review',      [AdminGradeController::class, 'review']);
+        // Grades — /results is the review screen (grouped by course offering).
+        Route::get('/results', [ResultReviewController::class, 'index']);
+        Route::patch('/results/bulk-review', [ResultReviewController::class, 'bulkReview']);
+        Route::get('/results/{offering}', [ResultReviewController::class, 'show']);
 
-        Route::get('/venues',           [AdminVenueController::class, 'index']);
-        Route::post('/venues',          [AdminVenueController::class, 'store']);
-        Route::get('/venues/{venue}',   [AdminVenueController::class, 'show']);
+        Route::get('/grades', [AdminGradeController::class, 'index']);
+        Route::get('/grades/pending', [AdminGradeController::class, 'pending']);
+        Route::patch('/grades/{grade}/review', [AdminGradeController::class, 'review']);
+
+        // Venues
+        Route::get('/venues', [AdminVenueController::class, 'index']);
+        Route::post('/venues', [AdminVenueController::class, 'store']);
+        Route::get('/venues/{venue}', [AdminVenueController::class, 'show']);
         Route::patch('/venues/{venue}', [AdminVenueController::class, 'update']);
 
-        Route::get('/timetable',            [AdminTimetableController::class, 'index']);
-        Route::post('/timetable',           [AdminTimetableController::class, 'store']);
-        Route::get('/timetable/{slot}',     [AdminTimetableController::class, 'show']);
-        Route::patch('/timetable/{slot}',   [AdminTimetableController::class, 'update']);
-        Route::delete('/timetable/{slot}',  [AdminTimetableController::class, 'destroy']);
+        // Timetable
+        Route::get('/timetable', [AdminTimetableController::class, 'index']);
+        Route::post('/timetable', [AdminTimetableController::class, 'store']);
+        Route::get('/timetable/{slot}', [AdminTimetableController::class, 'show']);
+        Route::patch('/timetable/{slot}', [AdminTimetableController::class, 'update']);
+        Route::delete('/timetable/{slot}', [AdminTimetableController::class, 'destroy']);
     });
-
-Route::prefix('profile')
-    ->middleware(['auth:sanctum'])
-    ->group(function () {
-        Route::get('/',              [ProfileController::class, 'show']);
-        Route::patch('/',            [ProfileController::class, 'update']);
-        Route::post('/photo',        [ProfileController::class, 'updatePhoto']);
-        Route::delete('/photo',      [ProfileController::class, 'removePhoto']);
-    });
-
-// Rate limiter — 5 login attempts per minute per IP
-RateLimiter::for('login', function (Request $request) {
-    return Limit::perMinute(5)->by($request->ip());
-});
-
-Route::prefix('options')->group(function () {
-    Route::get('/departments',         [OptionsController::class, 'departments']);
-    Route::get('/study-types',         [OptionsController::class, 'studyTypes']);
-    Route::get('/prefixes',            [OptionsController::class, 'prefixes']);
-    Route::get('/academic-sessions',   [OptionsController::class, 'academicSessions']);
-    Route::get('/academic-rules', [OptionsController::class, 'academicRules']);
-});
-
-Route::prefix('auth')->group(function () {
-
-    Route::post('/login', [AuthController::class, 'login'])
-        ->middleware('throttle:5,1');
-
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/logout', [AuthController::class, 'logout']);
-    });
-});

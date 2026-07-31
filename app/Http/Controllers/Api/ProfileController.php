@@ -21,7 +21,7 @@ class ProfileController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Profile retrieved successfully.',
-            'data'    => new UserResource($user),
+            'data' => new UserResource($user),
         ]);
     }
 
@@ -34,7 +34,7 @@ class ProfileController extends Controller
         }
 
         // Update contact profile
-       $user->profile()->updateOrCreate(
+        $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
             $request->only([
                 'phone',
@@ -53,7 +53,7 @@ class ProfileController extends Controller
         ])) {
             $lecturerData = array_filter(
                 $request->only(['prefix', 'highest_qualification', 'specialization']),
-                fn($value) => $value !== null && $value !== ''
+                fn ($value) => $value !== null && $value !== ''
             );
 
             if (! empty($lecturerData)) {
@@ -69,30 +69,33 @@ class ProfileController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Profile updated successfully.',
-            'data'    => new UserResource($user),
+            'data' => new UserResource($user),
         ]);
     }
 
     public function updatePhoto(UpdatePhotoRequest $request): JsonResponse
     {
         $user = $request->user();
+        $previousPublicId = $user->profile_photo_public_id;
 
-        // Delete old photo from Cloudinary if it exists
-        if ($user->profile_photo_public_id) {
-            $this->cloudinary->deletePhoto($user->profile_photo_public_id);
-        }
-
+        // Upload first, then swap the reference, then clean up the old asset.
+        // The previous order deleted the existing photo before uploading its
+        // replacement, so any upload failure left the user with no photo at all.
         $result = $this->cloudinary->uploadProfilePhoto($request->file('photo'));
 
         $user->update([
-            'profile_photo_url'       => $result['url'],
+            'profile_photo_url' => $result['url'],
             'profile_photo_public_id' => $result['public_id'],
         ]);
+
+        if ($previousPublicId) {
+            $this->cloudinary->deletePhoto($previousPublicId);
+        }
 
         return response()->json([
             'success' => true,
             'message' => 'Profile photo updated successfully.',
-            'data'    => [
+            'data' => [
                 'profile_photo_url' => $result['url'],
             ],
         ]);
@@ -112,7 +115,7 @@ class ProfileController extends Controller
         $this->cloudinary->deletePhoto($user->profile_photo_public_id);
 
         $user->update([
-            'profile_photo_url'       => null,
+            'profile_photo_url' => null,
             'profile_photo_public_id' => null,
         ]);
 

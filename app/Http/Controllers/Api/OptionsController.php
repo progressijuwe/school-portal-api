@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Department;
+use App\Models\AcademicSession;
 use App\Models\Faculty;
 use Illuminate\Http\JsonResponse;
-use App\Models\AcademicSession;
 
 class OptionsController extends Controller
 {
@@ -18,7 +17,7 @@ class OptionsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Departments retrieved successfully.',
-            'data'    => $faculties,
+            'data' => $faculties,
         ]);
     }
 
@@ -27,7 +26,7 @@ class OptionsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Study types retrieved successfully.',
-            'data'    => [
+            'data' => [
                 'Undergraduate',
                 'Postgraduate',
             ],
@@ -42,7 +41,7 @@ class OptionsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Academic sessions retrieved successfully.',
-            'data'    => $sessions,
+            'data' => $sessions,
         ]);
     }
 
@@ -51,7 +50,7 @@ class OptionsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Prefixes retrieved successfully.',
-            'data'    => [
+            'data' => [
                 'Dr.',
                 'Prof.',
                 'Mr.',
@@ -68,7 +67,7 @@ class OptionsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Academic rules retrieved successfully.',
-            'data'    => [
+            'data' => [
                 'min_credit_units_per_semester' => config('academics.min_credit_units_per_semester'),
                 'max_credit_units_per_semester' => config('academics.max_credit_units_per_semester'),
             ],

@@ -3,9 +3,8 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\ChangePasswordRequest;
+use App\Http\Requests\Auth\ChangePasswordRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class PasswordController extends Controller
@@ -15,7 +14,7 @@ class PasswordController extends Controller
         $user = $request->user();
 
         $user->update([
-            'password'             => Hash::make($request->password),
+            'password' => Hash::make($request->password),
             'must_change_password' => false,
         ]);
 

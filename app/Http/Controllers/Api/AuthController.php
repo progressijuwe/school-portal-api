@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\UserResource;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +21,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
 
         $user->tokens()->delete();
@@ -40,8 +41,8 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Login successful.',
-            'data'    => [
-                'user'  => new UserResource($user),
+            'data' => [
+                'user' => new UserResource($user),
                 'token' => $token,
             ],
         ]);

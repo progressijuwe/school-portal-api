@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('department_id')->constrained()->restrictOnDelete();
             $table->string('title');
-            $table->string('code')->unique();          
-            $table->tinyInteger('credit_units');      
+            $table->string('code')->unique();
+            $table->tinyInteger('credit_units');
             $table->enum('level', ['100', '200', '300', '400', '500']);
             $table->enum('semester', ['first', 'second']);
             $table->enum('type', ['compulsory', 'elective']); // elective = open to other depts

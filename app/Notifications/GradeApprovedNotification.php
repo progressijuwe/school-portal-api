@@ -12,10 +12,7 @@ class GradeApprovedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(protected Grade $grade) 
-    {
-
-    }
+    public function __construct(protected Grade $grade) {}
 
     public function via(object $notifiable): array
     {
@@ -27,7 +24,7 @@ class GradeApprovedNotification extends Notification implements ShouldQueue
         $course = $this->grade->enrollment->courseOffering->course;
 
         return (new MailMessage)
-            ->subject('Grade Released — ' . $course->title)
+            ->subject('Grade Released — '.$course->title)
             ->greeting("Hello {$notifiable->name},")
             ->line("Your grade for **{$course->title}** has been released.")
             ->line("**Score:** {$this->grade->score}")
@@ -42,10 +39,10 @@ class GradeApprovedNotification extends Notification implements ShouldQueue
         $course = $this->grade->enrollment->courseOffering->course;
 
         return [
-            'title'   => 'Grade Released',
+            'title' => 'Grade Released',
             'message' => "Your grade for {$course->title} has been released. Grade: {$this->grade->letter_grade}",
-            'type'    => 'grade_approved',
-            'grade_id'=> $this->grade->id,
+            'type' => 'grade_approved',
+            'grade_id' => $this->grade->id,
         ];
     }
 }

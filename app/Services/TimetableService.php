@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\TimetableSlot;
 use App\Models\CourseOffering;
+use App\Models\TimetableSlot;
 
 class TimetableService
 {
@@ -12,14 +12,13 @@ class TimetableService
      * Returns an array of conflict messages, empty if none.
      */
     public function checkConflicts(
-        int     $courseOfferingId,
-        int     $venueId,
-        string  $day,
-        string  $startTime,
-        string  $endTime,
-        ?int    $excludeSlotId = null
-    ): array
-    {
+        int $courseOfferingId,
+        int $venueId,
+        string $day,
+        string $startTime,
+        string $endTime,
+        ?int $excludeSlotId = null
+    ): array {
         $conflicts = [];
 
         $offering = CourseOffering::with('course', 'lecturer')->find($courseOfferingId);
@@ -42,9 +41,8 @@ class TimetableService
         if ($offering->lecturer_id) {
             $lecturerSlots = TimetableSlot::where('day', $day)
                 ->where('is_active', true)
-                ->when($excludeSlotId, fn($q) => $q->where('id', '!=', $excludeSlotId))
-                ->whereHas('courseOffering', fn($q) =>
-                    $q->where('lecturer_id', $offering->lecturer_id)
+                ->when($excludeSlotId, fn ($q) => $q->where('id', '!=', $excludeSlotId))
+                ->whereHas('courseOffering', fn ($q) => $q->where('lecturer_id', $offering->lecturer_id)
                 )
                 ->get();
 
@@ -59,10 +57,10 @@ class TimetableService
         // 3. Department/level conflict — same department, same level, same day, overlapping time
         $deptLevelSlots = TimetableSlot::where('day', $day)
             ->where('is_active', true)
-            ->when($excludeSlotId, fn($q) => $q->where('id', '!=', $excludeSlotId))
+            ->when($excludeSlotId, fn ($q) => $q->where('id', '!=', $excludeSlotId))
             ->whereHas('courseOffering.course', function ($q) use ($offering) {
                 $q->where('department_id', $offering->course->department_id)
-                  ->where('level', $offering->course->level);
+                    ->where('level', $offering->course->level);
             })
             ->get();
 
@@ -77,18 +75,17 @@ class TimetableService
     }
 
     protected function hasTimeOverlap(
-        int    $id,
+        int $id,
         string $day,
         string $startTime,
         string $endTime,
-        ?int   $excludeSlotId,
+        ?int $excludeSlotId,
         string $column
-    ): bool
-    {
+    ): bool {
         $slots = TimetableSlot::where($column, $id)
             ->where('day', $day)
             ->where('is_active', true)
-            ->when($excludeSlotId, fn($q) => $q->where('id', '!=', $excludeSlotId))
+            ->when($excludeSlotId, fn ($q) => $q->where('id', '!=', $excludeSlotId))
             ->get();
 
         foreach ($slots as $slot) {
@@ -105,8 +102,7 @@ class TimetableService
         string $endA,
         string $startB,
         string $endB
-    ): bool
-    {
+    ): bool {
         return $startA < $endB && $endA > $startB;
     }
 }

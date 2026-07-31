@@ -38,7 +38,7 @@ class UserRegisteredNotification extends Notification implements ShouldQueue
             ->subject('Welcome to School Portal — Your Account Details')
             ->greeting("Hello {$notifiable->name},")
             ->line("Your {$this->role} account has been created on the School Portal.")
-            ->line("Here are your login credentials:")
+            ->line('Here are your login credentials:')
             ->line("**Email:** {$notifiable->email}")
             ->line("**Temporary Password:** {$this->temporaryPassword}")
             ->line('You will be required to change your password on first login.')
@@ -50,9 +50,9 @@ class UserRegisteredNotification extends Notification implements ShouldQueue
     public function toDatabase(object $notifiable): array
     {
         return [
-            'title'   => 'Welcome to School Portal',
+            'title' => 'Welcome to School Portal',
             'message' => "Your {$this->role} account has been created. Please log in and change your password.",
-            'type'    => 'account_created',
+            'type' => 'account_created',
         ];
     }
 

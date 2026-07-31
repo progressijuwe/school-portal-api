@@ -18,12 +18,12 @@ class VenueController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Venues retrieved successfully.',
-            'data'    => VenueResource::collection($venues->items()),
-            'meta'    => [
+            'data' => VenueResource::collection($venues->items()),
+            'meta' => [
                 'current_page' => $venues->currentPage(),
-                'last_page'    => $venues->lastPage(),
-                'per_page'     => $venues->perPage(),
-                'total'        => $venues->total(),
+                'last_page' => $venues->lastPage(),
+                'per_page' => $venues->perPage(),
+                'total' => $venues->total(),
             ],
         ]);
     }
@@ -35,7 +35,7 @@ class VenueController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Venue created successfully.',
-            'data'    => new VenueResource($venue),
+            'data' => new VenueResource($venue),
         ], 201);
     }
 
@@ -44,7 +44,7 @@ class VenueController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Venue retrieved successfully.',
-            'data'    => new VenueResource($venue),
+            'data' => new VenueResource($venue),
         ]);
     }
 
@@ -55,7 +55,7 @@ class VenueController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Venue updated successfully.',
-            'data'    => new VenueResource($venue),
+            'data' => new VenueResource($venue),
         ]);
     }
 }

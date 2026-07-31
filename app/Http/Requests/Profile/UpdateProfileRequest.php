@@ -6,27 +6,27 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateProfileRequest extends FormRequest
 {
-    public function authorize(): bool 
-    { 
-        return true; 
+    public function authorize(): bool
+    {
+        return true;
     }
 
     public function rules(): array
     {
         return [
-            'name'                    => ['sometimes', 'string', 'max:255'],
-            'phone'                   => ['sometimes', 'nullable', 'string', 'max:20'],
-            'address'                 => ['sometimes', 'nullable', 'string', 'max:500'],
-            'date_of_birth'           => ['sometimes', 'nullable', 'date', 'before:today'],
-            'prefix'                  => [
-                                            'sometimes',
-                                            'nullable',
-                                            'string',
-                                            'in:Dr.,Prof.,Mr.,Mrs.,Ms.,Engr.,Rev.',
-                                        ],
-            'highest_qualification'   => ['sometimes', 'nullable', 'string', 'max:100'],
-            'specialization'          => ['sometimes', 'nullable', 'string', 'max:100'],
-            'emergency_contact_name'  => ['sometimes', 'nullable', 'string', 'max:255'],
+            'name' => ['sometimes', 'string', 'max:255'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:20'],
+            'address' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'date_of_birth' => ['sometimes', 'nullable', 'date', 'before:today'],
+            'prefix' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'in:Dr.,Prof.,Mr.,Mrs.,Ms.,Engr.,Rev.',
+            ],
+            'highest_qualification' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'specialization' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'emergency_contact_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'emergency_contact_phone' => ['sometimes', 'nullable', 'string', 'max:20'],
         ];
     }
@@ -34,9 +34,9 @@ class UpdateProfileRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'phone.max'                          => 'Phone number must not exceed 20 characters.',
-            'date_of_birth.before'                => 'Date of birth must be in the past.',
-            'emergency_contact_phone.max'        => 'Emergency contact phone must not exceed 20 characters.',
+            'phone.max' => 'Phone number must not exceed 20 characters.',
+            'date_of_birth.before' => 'Date of birth must be in the past.',
+            'emergency_contact_phone.max' => 'Emergency contact phone must not exceed 20 characters.',
             'emergency_contact_relationship.max' => 'Relationship must not exceed 100 characters.',
         ];
     }

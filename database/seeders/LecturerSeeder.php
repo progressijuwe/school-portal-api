@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Department;
+use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -18,27 +19,28 @@ class LecturerSeeder extends Seeder
 
         $lecturers = [
             [
-                'name'                  => 'Test Lecturer One',
-                'email'                 => 'lecturer1@aust.edu.ng',
-                'department_id'         => $department->id,
-                'prefix'                => 'Dr.',
+                'name' => 'Test Lecturer One',
+                'email' => 'lecturer1@aust.edu.ng',
+                'department_id' => $department->id,
+                'prefix' => 'Dr.',
                 'highest_qualification' => 'PhD',
-                'specialization'        => 'Software Engineering',
+                'specialization' => 'Software Engineering',
             ],
             [
-                'name'                  => 'Test Lecturer Two',
-                'email'                 => 'lecturer2@aust.edu.ng',
-                'department_id'         => $department->id,
-                'prefix'                => 'Mr.',
+                'name' => 'Test Lecturer Two',
+                'email' => 'lecturer2@aust.edu.ng',
+                'department_id' => $department->id,
+                'prefix' => 'Mr.',
                 'highest_qualification' => 'MSc',
-                'specialization'        => 'Cyber Security',
+                'specialization' => 'Cyber Security',
             ],
         ];
 
         foreach ($lecturers as $data) {
-            $existing = \App\Models\User::where('email', $data['email'])->first();
+            $existing = User::where('email', $data['email'])->first();
             if ($existing) {
                 $this->command->info("Skipped (exists): {$data['email']}");
+
                 continue;
             }
 

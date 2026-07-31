@@ -2,8 +2,12 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\DayOfWeek;
+use App\Services\TimetableService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreTimetableSlotRequest extends FormRequest
 {
@@ -24,10 +28,10 @@ class StoreTimetableSlotRequest extends FormRequest
     {
         return [
             'course_offering_id' => ['required', 'integer', 'exists:course_offerings,id'],
-            'venue_id'           => ['required', 'integer', 'exists:venues,id'],
-            'day'                => ['required', 'in:monday,tuesday,wednesday,thursday,friday'],
-            'start_time'         => ['required', 'date_format:H:i'],
-            'end_time'           => ['required', 'date_format:H:i', 'after:start_time'],
+            'venue_id' => ['required', 'integer', 'exists:venues,id'],
+            'day' => ['required', Rule::enum(DayOfWeek::class)],
+            'start_time' => ['required', 'date_format:H:i'],
+            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
         ];
     }
 
@@ -36,7 +40,7 @@ class StoreTimetableSlotRequest extends FormRequest
         return [
             function (Validator $validator) {
                 if (! $validator->errors()->any()) {
-                    $conflicts = app(\App\Services\TimetableService::class)->checkConflicts(
+                    $conflicts = app(TimetableService::class)->checkConflicts(
                         $this->course_offering_id,
                         $this->venue_id,
                         $this->day,

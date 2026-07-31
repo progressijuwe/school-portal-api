@@ -2,8 +2,12 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\DayOfWeek;
+use App\Services\TimetableService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateTimetableSlotRequest extends FormRequest
 {
@@ -24,11 +28,11 @@ class UpdateTimetableSlotRequest extends FormRequest
     {
         return [
             'course_offering_id' => ['sometimes', 'integer', 'exists:course_offerings,id'],
-            'venue_id'           => ['sometimes', 'integer', 'exists:venues,id'],
-            'day'                => ['sometimes', 'in:monday,tuesday,wednesday,thursday,friday'],
-            'start_time'         => ['sometimes', 'date_format:H:i'],
-            'end_time'           => ['sometimes', 'date_format:H:i', 'after:start_time'],
-            'is_active'          => ['sometimes', 'boolean'],
+            'venue_id' => ['sometimes', 'integer', 'exists:venues,id'],
+            'day' => ['sometimes', Rule::enum(DayOfWeek::class)],
+            'start_time' => ['sometimes', 'date_format:H:i'],
+            'end_time' => ['sometimes', 'date_format:H:i', 'after:start_time'],
+            'is_active' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -39,12 +43,12 @@ class UpdateTimetableSlotRequest extends FormRequest
                 if (! $validator->errors()->any()) {
                     $slot = $this->route('slot');
 
-                    $conflicts = app(\App\Services\TimetableService::class)->checkConflicts(
+                    $conflicts = app(TimetableService::class)->checkConflicts(
                         $this->course_offering_id ?? $slot->course_offering_id,
-                        $this->venue_id           ?? $slot->venue_id,
-                        $this->day                ?? $slot->day,
-                        $this->start_time         ?? $slot->start_time,
-                        $this->end_time           ?? $slot->end_time,
+                        $this->venue_id ?? $slot->venue_id,
+                        $this->day ?? $slot->day,
+                        $this->start_time ?? $slot->start_time,
+                        $this->end_time ?? $slot->end_time,
                         $slot->id,
                     );
 

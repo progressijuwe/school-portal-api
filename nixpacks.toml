@@ -1,0 +1,22 @@
+# Nixpacks build configuration for Railway.
+#
+# Without this, Nixpacks guesses the PHP version and installs dev dependencies
+# into the production image.
+
+[phases.setup]
+nixPkgs = ['php82', 'php82Extensions.pdo_mysql', 'php82Extensions.mbstring', 'php82Extensions.gd', 'php82Extensions.intl', 'php82Extensions.bcmath', 'php82Packages.composer']
+
+[phases.install]
+# --no-dev keeps PHPUnit, Pint, Larastan and Boost out of the deployed image.
+# --optimize-autoloader builds a classmap instead of scanning the filesystem
+# on every request.
+cmds = ['composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist']
+
+[start]
+cmd = 'php artisan serve --host=0.0.0.0 --port=$PORT'
+
+[variables]
+# Laravel reads the container's port from PORT; Railway injects it.
+APP_ENV = 'production'
+APP_DEBUG = 'false'
+LOG_CHANNEL = 'stderr'
