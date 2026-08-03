@@ -116,12 +116,15 @@ class LecturerController extends BaseController
             ], 403);
         }
 
+        // The grade relation is a hasOne over a unique enrollment_id, so it can
+        // never return more than one row — a status filter here could only ever
+        // hide that row, never choose between several. The previous filter
+        // listed every status except `rejected`, so once an admin sent a mark
+        // sheet back the lecturer's own scores and the rejection reason
+        // vanished from their screen and the correction could not be made.
         $enrollments = Enrollment::where('course_offering_id', $offering->id)
             ->where('status', 'active')
-            ->with([
-                'student.department',
-                'grade' => fn ($q) => $q->whereIn('status', ['draft', 'pending', 'approved']),
-            ])
+            ->with(['student.department', 'grade'])
             ->paginate(20);
 
         return response()->json([
