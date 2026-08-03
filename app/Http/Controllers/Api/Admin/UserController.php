@@ -64,7 +64,10 @@ class UserController extends BaseController
             ->when($role === 'student' && $request->filled('entry_year'), fn ($query) => $query
                 ->where('entry_year', $request->integer('entry_year')))
             ->latest()
-            ->paginate(20)
+            // Honours per_page so a picker can ask for more than one table page
+            // of lecturers in a single request, capped so a caller cannot ask
+            // for the whole user table.
+            ->paginate(perPage: min($request->integer('per_page', 20), 100))
             ->withQueryString();
 
         return $this->paginated($users, UserResource::class, 'Users retrieved successfully.');

@@ -151,10 +151,13 @@ Route::prefix('admin')
         Route::patch('/courses/{course}/deactivate', [AdminCourseController::class, 'deactivate']);
         Route::patch('/courses/{course}/activate', [AdminCourseController::class, 'activate']);
 
-        // Course offerings
+        // Course offerings — no destroy route: enrollments reference an
+        // offering with restrictOnDelete, so closing one means PATCHing
+        // is_active to false rather than removing the row.
         Route::get('/offerings', [AdminCourseOfferingController::class, 'index']);
         Route::post('/offerings', [AdminCourseOfferingController::class, 'store']);
         Route::get('/offerings/{offering}', [AdminCourseOfferingController::class, 'show']);
+        Route::patch('/offerings/{offering}', [AdminCourseOfferingController::class, 'update']);
 
         // Enrollments — /registrations is the review screen (grouped by
         // student); /enrollments is the flat resource.
