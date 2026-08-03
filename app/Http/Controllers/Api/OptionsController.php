@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\AcademicSessionResource;
 use App\Models\AcademicSession;
 use App\Models\Faculty;
 use Illuminate\Http\JsonResponse;
@@ -33,15 +34,20 @@ class OptionsController extends Controller
         ]);
     }
 
+    /**
+     * The column list previously selected only id, name and is_current, so the
+     * semester dates were absent and no caller could tell which half of the
+     * year a session was in. Going through the resource ships the dates and the
+     * derived `current_semester` alongside them.
+     */
     public function academicSessions(): JsonResponse
     {
-        $sessions = AcademicSession::orderByDesc('start_year')
-            ->get(['id', 'name', 'is_current']);
+        $sessions = AcademicSession::orderByDesc('start_year')->get();
 
         return response()->json([
             'success' => true,
             'message' => 'Academic sessions retrieved successfully.',
-            'data' => $sessions,
+            'data' => AcademicSessionResource::collection($sessions),
         ]);
     }
 

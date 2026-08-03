@@ -206,7 +206,11 @@ class StudentController extends BaseController
             ], 404);
         }
 
-        $semester = $request->query('semester', 'first'); // default to first if not specified
+        // Was `$request->query('semester', 'first')`, the one endpoint that did
+        // not go through the shared resolver — so a student who opened Results
+        // without picking a semester saw an empty first-semester table all
+        // through the second half of the year.
+        $semester = $this->resolveSemester($request, $session);
 
         $enrollments = Enrollment::where('student_id', $student->id)
             ->whereHas('courseOffering', fn ($q) => $q->where('academic_session_id', $session->id)
