@@ -225,10 +225,6 @@ class StudentController extends BaseController
             ], 404);
         }
 
-        // Was `$request->query('semester', 'first')`, the one endpoint that did
-        // not go through the shared resolver — so a student who opened Results
-        // without picking a semester saw an empty first-semester table all
-        // through the second half of the year.
         $semester = $this->resolveSemester($request, $session);
 
         $enrollments = Enrollment::where('student_id', $student->id)
@@ -325,13 +321,6 @@ class StudentController extends BaseController
                     'cgpa' => $record?->cgpa,
                 ];
             })
-            /*
-             * One composite key rather than sortBy()'s multi-comparison array
-             * form: passed an array of closures that overload resolves to a
-             * single callback and silently sorts by nothing, which left the
-             * transcript in whatever order the enrollments happened to come
-             * back in. A transcript has to read forwards through time.
-             */
             ->sortBy(fn ($period) => sprintf(
                 '%04d-%d',
                 (int) $period['session_start_year'],
@@ -393,15 +382,6 @@ class StudentController extends BaseController
             ->with('academicSession')
             ->get();
 
-        /*
-         * The most recent period carries the running CGPA.
-         *
-         * `->`, not `?->`: Larastan types last() as non-null here, so the
-         * nullsafe operator trips its nullsafe.neverNull rule. It is still safe
-         * on an empty collection — `??` evaluates the left side with isset()
-         * semantics, so a null base yields the fallback rather than a warning.
-         * This is the same form the transcript and dashboard already use.
-         */
         $cgpa = $records->last()->cgpa ?? '0.00';
 
         return response()->json([
