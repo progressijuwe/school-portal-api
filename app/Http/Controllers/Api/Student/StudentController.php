@@ -393,8 +393,16 @@ class StudentController extends BaseController
             ->with('academicSession')
             ->get();
 
-        // The most recent period carries the running CGPA.
-        $cgpa = $records->last()?->cgpa ?? '0.00';
+        /*
+         * The most recent period carries the running CGPA.
+         *
+         * `->`, not `?->`: Larastan types last() as non-null here, so the
+         * nullsafe operator trips its nullsafe.neverNull rule. It is still safe
+         * on an empty collection — `??` evaluates the left side with isset()
+         * semantics, so a null base yields the fallback rather than a warning.
+         * This is the same form the transcript and dashboard already use.
+         */
+        $cgpa = $records->last()->cgpa ?? '0.00';
 
         return response()->json([
             'success' => true,
