@@ -50,7 +50,7 @@ class StoreEnrollmentRequest extends FormRequest
                     ->get();
 
                 $this->assertSinglePeriod($validator, $offerings);
-                $this->assertNotAlreadyRegistered($validator);
+                $this->assertNotAlreadyRegistered($validator, $offerings);
                 $this->assertWithinCreditLimits($validator, $offerings);
             },
         ];
@@ -84,18 +84,42 @@ class StoreEnrollmentRequest extends FormRequest
         }
     }
 
-    private function assertNotAlreadyRegistered(Validator $validator): void
+    /**
+     * Registration happens once per semester.
+     *
+     * The previous rule only rejected courses the student was *already* holding,
+     * so a second submission of different courses went through and was caught —
+     * if at all — by the credit-limit check further down. A student who
+     * registered fifteen units and came back for three more was told their
+     * registration "would exceed the maximum of 24 credit units", which
+     * describes the arithmetic rather than the actual rule.
+     *
+     * Scoped to statuses that occupy a seat, so a rejected submission reopens
+     * registration for that semester rather than locking the student out —
+     * being turned down is precisely when they need to try again.
+     *
+     * @param  Collection<int, CourseOffering>  $offerings
+     */
+    private function assertNotAlreadyRegistered(Validator $validator, $offerings): void
     {
-        $alreadyEnrolled = Enrollment::query()
+        $first = $offerings->first();
+
+        if ($first === null) {
+            return;
+        }
+
+        $existing = Enrollment::query()
             ->where('student_id', $this->user()->id)
-            ->whereIn('course_offering_id', $this->offeringIds())
             ->occupyingSeat()
+            ->whereHas('courseOffering', fn ($query) => $query
+                ->where('academic_session_id', $first->academic_session_id)
+                ->where('semester', $first->semester->value))
             ->exists();
 
-        if ($alreadyEnrolled) {
+        if ($existing) {
             $validator->errors()->add(
                 'course_offering_ids',
-                'You are already registered or pending registration for one or more selected courses.'
+                'You have already registered for this semester. Withdraw or wait for the current registration to be reviewed before submitting another.'
             );
         }
     }
@@ -163,6 +187,11 @@ class StoreEnrollmentRequest extends FormRequest
     {
         return [
             'course_offering_ids.*.distinct' => 'The same course appears more than once in this registration.',
+            // Without this the default message interpolates the attribute path
+            // and reads "The selected course_offering_ids.0 is invalid.",
+            // which shows an internal field name to a student.
+            'course_offering_ids.*.exists' => 'One of the selected courses is no longer available.',
+            'course_offering_ids.*.integer' => 'One of the selected courses is not valid.',
         ];
     }
 }

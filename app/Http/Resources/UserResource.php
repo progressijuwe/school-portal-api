@@ -53,6 +53,10 @@ class UserResource extends JsonResource
                     'display_name' => "{$this->lecturerProfile->prefix} {$this->name}",
                 ]
             ),
+            // Offerings this lecturer runs in the session being listed. Only
+            // present when the query asked for the count, so a single-user
+            // response does not imply a total it never computed.
+            'courses_count' => $this->whenCounted('taughtOfferings'),
             'study_type' => $this->when($this->study_type !== null, $this->study_type),
             'entry_year' => $this->when($this->entry_year !== null, $this->entry_year),
             // Derived from the current academic session, not the calendar year.
@@ -79,6 +83,10 @@ class UserResource extends JsonResource
                 ]
             ),
             'must_change_password' => $this->must_change_password,
+            // Drives the "Reset requested" badge on the admin user lists. There
+            // is no mail service, so this flag is the only way a locked-out
+            // student reaches an administrator from inside the portal.
+            'password_reset_requested_at' => $this->password_reset_requested_at?->toDateTimeString(),
             'created_at' => $this->created_at->toDateTimeString(),
 
         ];

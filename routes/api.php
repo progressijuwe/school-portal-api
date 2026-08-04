@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\AcademicSessionController as AdminAcademicSessionController;
 use App\Http\Controllers\Api\Admin\CourseController as AdminCourseController;
 use App\Http\Controllers\Api\Admin\CourseOfferingController as AdminCourseOfferingController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Api\Auth\PasswordController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Lecturer\GradeController as LecturerGradeController;
 use App\Http\Controllers\Api\Lecturer\LecturerController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OptionsController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\Student\EnrollmentController as StudentEnrollmentController;
@@ -33,6 +35,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+
+    // Records a lockout for an administrator to action — there is no mail
+    // service, so no reset link is issued. Throttled on the same limiter as
+    // login: the endpoint is unauthenticated and writes to a user row.
+    Route::post('/forgot-password', [PasswordController::class, 'forgot'])
+        ->middleware('throttle:login');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
@@ -81,14 +89,17 @@ Route::prefix('student')
         Route::get('/timetable', [StudentController::class, 'timetable']);
         Route::get('/grades', [StudentController::class, 'grades']);
         Route::get('/gpa', [StudentController::class, 'gpaRecords']);
+        // The whole academic record in one response — see the note on the
+        // controller method for why it is not assembled from /grades.
+        Route::get('/transcript', [StudentController::class, 'transcript']);
 
         Route::get('/available-offerings', [StudentEnrollmentController::class, 'availableOfferings']);
         Route::post('/enrollments', [StudentEnrollmentController::class, 'store']);
         Route::get('/enrollments', [StudentEnrollmentController::class, 'myEnrollments']);
 
-        Route::get('/notifications', [StudentController::class, 'notifications']);
-        Route::patch('/notifications/read-all', [StudentController::class, 'markAllNotificationsRead']);
-        Route::patch('/notifications/{id}/read', [StudentController::class, 'markNotificationRead']);
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+        Route::patch('/notifications/{id}/read', [NotificationController::class, 'markRead']);
     });
 
 /*
@@ -113,9 +124,9 @@ Route::prefix('lecturer')
         Route::post('/grades/draft', [LecturerGradeController::class, 'saveDraft']);
         Route::patch('/grades/{grade}', [LecturerGradeController::class, 'update']);
 
-        Route::get('/notifications', [LecturerController::class, 'notifications']);
-        Route::patch('/notifications/read-all', [LecturerController::class, 'markAllNotificationsRead']);
-        Route::patch('/notifications/{id}/read', [LecturerController::class, 'markNotificationRead']);
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+        Route::patch('/notifications/{id}/read', [NotificationController::class, 'markRead']);
     });
 
 /*
@@ -130,31 +141,44 @@ Route::prefix('admin')
         Route::get('/dashboard', [AdminDashboardController::class, 'index']);
         Route::get('/activity', [AdminDashboardController::class, 'activity']);
 
+        // Admins receive a notification every time a lecturer submits a mark
+        // sheet. Until now there was no route on which to read them.
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+        Route::patch('/notifications/{id}/read', [NotificationController::class, 'markRead']);
+
         // Users — static segments are declared before /{user} so a literal path
         // can never be swallowed by the wildcard.
         Route::get('/users', [AdminUserController::class, 'index']);
         Route::post('/users', [AdminUserController::class, 'store']);
         Route::post('/users/bulk-import', [AdminUserController::class, 'bulkImport'])->middleware('throttle:heavy');
+        Route::get('/users/export', [AdminUserController::class, 'export'])->middleware('throttle:heavy');
         Route::get('/users/csv-template/{role}', [AdminUserController::class, 'downloadCsvTemplate']);
         Route::get('/users/{user}', [AdminUserController::class, 'show']);
         Route::patch('/users/{user}', [AdminUserController::class, 'update']);
         Route::delete('/users/{user}', [AdminUserController::class, 'destroy']);
+        Route::post('/users/{user}/reset-password', [AdminUserController::class, 'resetPassword']);
         Route::get('/users/{user}/summary', [AdminUserController::class, 'summary']);
         Route::get('/users/{user}/grades', [AdminUserController::class, 'studentGrades']);
         Route::get('/users/{user}/courses', [AdminUserController::class, 'lecturerCourses']);
 
         // Courses
         Route::get('/courses', [AdminCourseController::class, 'index']);
+        // Declared before /{course} so the literal path is not swallowed.
+        Route::get('/courses/export', [AdminCourseController::class, 'export'])->middleware('throttle:heavy');
         Route::post('/courses', [AdminCourseController::class, 'store']);
         Route::get('/courses/{course}', [AdminCourseController::class, 'show']);
         Route::patch('/courses/{course}', [AdminCourseController::class, 'update']);
         Route::patch('/courses/{course}/deactivate', [AdminCourseController::class, 'deactivate']);
         Route::patch('/courses/{course}/activate', [AdminCourseController::class, 'activate']);
 
-        // Course offerings
+        // Course offerings — no destroy route: enrollments reference an
+        // offering with restrictOnDelete, so closing one means PATCHing
+        // is_active to false rather than removing the row.
         Route::get('/offerings', [AdminCourseOfferingController::class, 'index']);
         Route::post('/offerings', [AdminCourseOfferingController::class, 'store']);
         Route::get('/offerings/{offering}', [AdminCourseOfferingController::class, 'show']);
+        Route::patch('/offerings/{offering}', [AdminCourseOfferingController::class, 'update']);
 
         // Enrollments — /registrations is the review screen (grouped by
         // student); /enrollments is the flat resource.
@@ -175,6 +199,16 @@ Route::prefix('admin')
         Route::get('/grades', [AdminGradeController::class, 'index']);
         Route::get('/grades/pending', [AdminGradeController::class, 'pending']);
         Route::patch('/grades/{grade}/review', [AdminGradeController::class, 'review']);
+
+        // Academic sessions — no destroy route: offerings and GPA records
+        // reference a session with restrictOnDelete, so one that anything ran
+        // in cannot be removed. Promoting a session is its own endpoint rather
+        // than a field on update, because it moves the whole portal.
+        Route::get('/sessions', [AdminAcademicSessionController::class, 'index']);
+        Route::post('/sessions', [AdminAcademicSessionController::class, 'store']);
+        Route::get('/sessions/{session}', [AdminAcademicSessionController::class, 'show']);
+        Route::patch('/sessions/{session}', [AdminAcademicSessionController::class, 'update']);
+        Route::patch('/sessions/{session}/set-current', [AdminAcademicSessionController::class, 'setCurrent']);
 
         // Venues
         Route::get('/venues', [AdminVenueController::class, 'index']);

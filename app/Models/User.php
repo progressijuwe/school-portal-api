@@ -36,6 +36,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $study_type
  * @property int|null $entry_year
  * @property bool $must_change_password
+ * @property Carbon|null $password_reset_requested_at
  * @property Carbon|null $email_verified_at
  * @property string|null $remember_token
  * @property Carbon|null $created_at
@@ -114,6 +115,7 @@ class User extends Authenticatable
         'study_type',
         'entry_year',
         'must_change_password',
+        'password_reset_requested_at',
     ];
 
     /**
@@ -137,6 +139,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'must_change_password' => 'boolean',
+            'password_reset_requested_at' => 'datetime',
             // A YEAR column comes back from MySQL as a string, so arithmetic
             // like `entry_year + duration_years` relied on PHP's numeric-string
             // coercion. Casting makes it an int everywhere, including in the

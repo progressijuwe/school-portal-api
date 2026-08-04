@@ -87,6 +87,33 @@ class UserService
     }
 
     /**
+     * Issue a fresh temporary password for a user who has lost theirs.
+     *
+     * Returns the plain password so the caller can show it to the administrator
+     * performing the reset. With no mail service configured there is nowhere
+     * else for it to go, and a reset the admin cannot read out is a reset that
+     * locks the account rather than recovering it.
+     *
+     * Existing tokens are revoked so any session still holding the old
+     * credentials is ended immediately, and `must_change_password` is set so
+     * the temporary password cannot become the permanent one.
+     */
+    public function resetPassword(User $user): string
+    {
+        $temporaryPassword = $this->generateTemporaryPassword();
+
+        $user->update([
+            'password' => Hash::make($temporaryPassword),
+            'must_change_password' => true,
+            'password_reset_requested_at' => null,
+        ]);
+
+        $user->tokens()->delete();
+
+        return $temporaryPassword;
+    }
+
+    /**
      * @return array{profile_photo_url: string, profile_photo_public_id: string}
      */
     private function uploadPhoto(UploadedFile $photo): array

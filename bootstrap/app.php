@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureNotAdmin;
+use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\ForceJsonResponse;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -36,8 +37,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Previously only /auth/login was throttled; every other endpoint was
         // unlimited. The `api` limiter is defined in AppServiceProvider.
+        // EnsurePasswordChanged runs on every API request but only acts on an
+        // authenticated user still holding a temporary password, so it is
+        // appended globally rather than repeated on each protected group.
         $middleware->api(append: [
             'throttle:api',
+            EnsurePasswordChanged::class,
         ]);
 
         $middleware->alias([

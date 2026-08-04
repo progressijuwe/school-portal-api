@@ -13,13 +13,18 @@ Artisan::command('inspire', function () {
 | Scheduled maintenance
 |--------------------------------------------------------------------------
 |
-| Requires a scheduler process in production (`php artisan schedule:work`, or
-| a Railway cron hitting `php artisan schedule:run` every minute).
+| The scheduler runs in production as one of the programs in supervisord.conf,
+| so it starts with the deploy rather than needing a service created by hand.
+|
+| onOneServer() takes an atomic cache lock before a command runs, so if the web
+| service is ever scaled past one replica — each with its own scheduler — the
+| command still executes exactly once. It needs a lock-capable cache store;
+| CACHE_STORE=database qualifies via the cache_locks table.
 |
 */
 
 // Tokens now expire (config/sanctum.php); this clears the dead rows.
-Schedule::command('sanctum:prune-expired --hours=24')->daily();
+Schedule::command('sanctum:prune-expired --hours=24')->daily()->onOneServer();
 
 // Failed queue jobs older than a week are noise, not signal.
-Schedule::command('queue:prune-failed --hours=168')->daily();
+Schedule::command('queue:prune-failed --hours=168')->daily()->onOneServer();

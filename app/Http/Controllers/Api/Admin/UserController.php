@@ -18,6 +18,7 @@ use App\Models\GpaRecord;
 use App\Models\User;
 use App\Services\CsvImportService;
 use App\Services\UserService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -42,8 +43,40 @@ class UserController extends BaseController
             ], 422);
         }
 
-        $users = User::query()
+        $users = $this->filteredUsers($request, $role)
+            ->latest()
+            // Honours per_page so a picker can ask for more than one table page
+            // of lecturers in a single request, capped so a caller cannot ask
+            // for the whole user table.
+            ->paginate(perPage: min($request->integer('per_page', 20), 100))
+            ->withQueryString();
+
+        return $this->paginated($users, UserResource::class, 'Users retrieved successfully.');
+    }
+
+    /**
+     * The filter chain the table and the export both run through.
+     *
+     * Shared so an export cannot quietly return a different set of people from
+     * the list the administrator was looking at when they pressed the button.
+     *
+     * @return Builder<User>
+     */
+    private function filteredUsers(Request $request, string $role): Builder
+    {
+        // The lecturers table has a "Courses" column. Scoped to the session the
+        // request is about so the number agrees with the count on the
+        // lecturer's own dashboard — an unscoped count would total every
+        // offering they have ever run and report 29 against the dashboard's 9.
+        $sessionId = $role === 'lecturer'
+            ? $this->resolveSession($request)?->id
+            : null;
+
+        return User::query()
             ->with('department.faculty', 'lecturerProfile', 'profile')
+            ->when($sessionId !== null, fn ($query) => $query
+                ->withCount(['taughtOfferings' => fn ($offerings) => $offerings
+                    ->where('academic_session_id', $sessionId)]))
             ->whereHas('roles', fn ($query) => $query->where('name', $role))
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search')->toString();
@@ -63,13 +96,94 @@ class UserController extends BaseController
                 ->atLevel($request->integer('level')))
             ->when($role === 'student' && $request->filled('entry_year'), fn ($query) => $query
                 ->where('entry_year', $request->integer('entry_year')))
-            ->latest()
-            ->paginate(20)
-            ->withQueryString();
-
-        return $this->paginated($users, UserResource::class, 'Users retrieved successfully.');
+            // Lets an admin jump straight to the people who are locked out,
+            // which is the whole point of recording the request.
+            ->when($request->boolean('reset_requested'), fn ($query) => $query
+                ->whereNotNull('password_reset_requested_at'));
     }
 
+    /**
+     * Export the current list as CSV.
+     *
+     * Streams every row the filters match rather than the page on screen: an
+     * export that silently stopped at twenty would be worse than no export,
+     * because nothing about the resulting file says it is partial.
+     *
+     * Chunked so the response does not depend on the whole cohort fitting in
+     * memory at once.
+     */
+    public function export(Request $request): StreamedResponse|JsonResponse
+    {
+        $role = $request->string('role', 'student')->toString();
+
+        if (! in_array($role, ['student', 'lecturer'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Role must be either student or lecturer.',
+            ], 422);
+        }
+
+        $isStudent = $role === 'student';
+
+        $headers = $isStudent
+            ? ['student_id', 'name', 'email', 'phone', 'department', 'faculty', 'level', 'entry_year', 'study_type', 'registered_on']
+            : ['staff_id', 'name', 'email', 'phone', 'department', 'faculty', 'prefix', 'highest_qualification', 'specialization', 'registered_on'];
+
+        $query = $this->filteredUsers($request, $role)->orderBy('name');
+        $filename = $role.'s_'.now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($query, $headers, $isStudent) {
+            $handle = fopen('php://output', 'w');
+
+            // Excel assumes the system codepage without a BOM, which mangles
+            // any non-ASCII name in the export.
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, $headers);
+
+            $query->chunk(200, function ($users) use ($handle, $isStudent) {
+                foreach ($users as $user) {
+                    fputcsv($handle, $isStudent
+                        ? [
+                            $user->student_id,
+                            $user->name,
+                            $user->email,
+                            $user->profile?->phone,
+                            $user->department?->name,
+                            $user->department?->faculty?->name,
+                            $user->level,
+                            $user->entry_year,
+                            $user->study_type,
+                            $user->created_at?->toDateString(),
+                        ]
+                        : [
+                            $user->staff_id,
+                            $user->name,
+                            $user->email,
+                            $user->profile?->phone,
+                            $user->department?->name,
+                            $user->department?->faculty?->name,
+                            $user->lecturerProfile?->prefix,
+                            $user->lecturerProfile?->highest_qualification,
+                            $user->lecturerProfile?->specialization,
+                            $user->created_at?->toDateString(),
+                        ]);
+                }
+            });
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * The temporary password is returned to the administrator who created the
+     * account.
+     *
+     * It used to be generated, emailed, and dropped from the response. With no
+     * mail service configured that made every new account unreachable: nobody
+     * ever learned the password, and there was no reset path either. Handing it
+     * back is the only delivery channel that exists, so the admin can pass it on
+     * directly.
+     */
     public function store(StoreUserRequest $request): JsonResponse
     {
         $result = $this->userService->createUser(
@@ -82,8 +196,46 @@ class UserController extends BaseController
         return response()->json([
             'success' => true,
             'message' => ucfirst($request->string('role')->toString()).' account created successfully.',
-            'data' => new UserResource($result['user']),
+            'data' => [
+                // resolve(), not toArray(). toArray() returns the raw array
+                // including the MissingValue placeholders that `when()` yields
+                // for absent fields; it is resolve() that strips them. Spreading
+                // toArray() serialised every inapplicable field — a student's
+                // staff_id, an unloaded phone and address — as `{}`.
+                ...(new UserResource($result['user']))->resolve($request),
+                'temporary_password' => $result['password'],
+            ],
         ], 201);
+    }
+
+    /**
+     * Issue a new temporary password for a user who cannot get in.
+     *
+     * Admins are excluded: an admin resetting another admin's password is a
+     * privilege-escalation path, and the seeded super admin is recovered from
+     * the console rather than through the portal.
+     */
+    public function resetPassword(User $user): JsonResponse
+    {
+        if ($user->hasRole('admin')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Administrator passwords cannot be reset from the portal.',
+            ], 403);
+        }
+
+        $temporaryPassword = $this->userService->resetPassword($user);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'A new temporary password has been issued.',
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'temporary_password' => $temporaryPassword,
+            ],
+        ]);
     }
 
     public function show(User $user): JsonResponse
@@ -185,7 +337,18 @@ class UserController extends BaseController
             $row['role'] = $role;
 
             try {
-                $created[] = new UserResource($this->userService->createUser($row)['user']);
+                $imported = $this->userService->createUser($row);
+
+                // Each account's temporary password travels back with it, for
+                // the same reason single creation returns one: there is no mail
+                // service, so an import that withheld them would produce a
+                // whole cohort of accounts nobody could sign in to.
+                $created[] = [
+                    // resolve() rather than toArray(), for the reason given on
+                    // the single-creation response above.
+                    ...(new UserResource($imported['user']))->resolve($request),
+                    'temporary_password' => $imported['password'],
+                ];
             } catch (\Throwable $e) {
                 report($e);
 

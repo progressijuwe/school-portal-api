@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Cast types are declared here as well as in casts(): static analysis reads
@@ -108,9 +109,20 @@ class AcademicSession extends Model
         return Semester::First;
     }
 
+    /**
+     * Make this the session every "current" lookup resolves to.
+     *
+     * Wrapped in a transaction because the two writes are not independent: if
+     * the clear succeeded and the set failed, *no* session would be current,
+     * and every screen in the portal resolves the current session first — the
+     * whole application would answer "No active academic session found" until
+     * someone fixed it by hand.
+     */
     public function markAsCurrent(): void
     {
-        static::where('is_current', true)->update(['is_current' => false]);
-        $this->update(['is_current' => true]);
+        DB::transaction(function () {
+            static::where('is_current', true)->update(['is_current' => false]);
+            $this->update(['is_current' => true]);
+        });
     }
 }
