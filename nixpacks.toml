@@ -4,7 +4,9 @@
 # into the production image.
 
 [phases.setup]
-nixPkgs = ['php82', 'php82Extensions.pdo_mysql', 'php82Extensions.mbstring', 'php82Extensions.gd', 'php82Extensions.intl', 'php82Extensions.bcmath', 'php82Packages.composer']
+# supervisor runs the web server, queue worker and scheduler together in this
+# one container — see supervisord.conf for why they are not separate services.
+nixPkgs = ['php82', 'php82Extensions.pdo_mysql', 'php82Extensions.mbstring', 'php82Extensions.gd', 'php82Extensions.intl', 'php82Extensions.bcmath', 'php82Packages.composer', 'supervisor']
 
 [phases.install]
 # --no-dev keeps PHPUnit, Pint, Larastan and Boost out of the deployed image.
@@ -13,7 +15,10 @@ nixPkgs = ['php82', 'php82Extensions.pdo_mysql', 'php82Extensions.mbstring', 'ph
 cmds = ['composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist']
 
 [start]
-cmd = 'php artisan serve --host=0.0.0.0 --port=$PORT'
+# Starts web + queue worker + scheduler. Running the web server directly here
+# would leave queued jobs unprocessed on any deploy that did not also have
+# hand-created worker and scheduler services.
+cmd = 'supervisord -c /app/supervisord.conf'
 
 [variables]
 # Laravel reads the container's port from PORT; Railway injects it.

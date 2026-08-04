@@ -24,8 +24,20 @@ class AuthController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        $user->tokens()->delete();
-
+        /*
+         * Signing in no longer revokes the account's other tokens.
+         *
+         * It used to, which made this a single-session system by accident: a
+         * lecturer signing in on their phone was silently logged out on the
+         * laptop they had a mark sheet open in. Tokens carry an expiry
+         * (config/sanctum.php, seven days by default) and `sanctum:prune-expired`
+         * runs daily, so they do not accumulate indefinitely.
+         *
+         * Deliberate revocation still happens where it protects the account:
+         * changing a password and an administrator resetting one both drop
+         * every existing token, so a compromised session cannot outlive the
+         * credentials it was opened with.
+         */
         $token = $user->createToken(
             $request->header('User-Agent', 'unknown-client')
         )->plainTextToken;

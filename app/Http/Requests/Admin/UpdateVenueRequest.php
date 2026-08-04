@@ -28,6 +28,7 @@ class UpdateVenueRequest extends FormRequest
 
         return [
             'name' => ['sometimes', 'string', 'max:255'],
+            'building' => ['sometimes', 'nullable', 'string', 'max:255'],
             'code' => ['sometimes', 'string', 'max:20', Rule::unique('venues', 'code')->ignore($venueId)],
             'type' => ['sometimes', Rule::enum(VenueType::class)],
             'capacity' => ['sometimes', 'integer', 'min:1'],

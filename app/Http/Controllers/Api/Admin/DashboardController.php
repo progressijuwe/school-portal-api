@@ -64,6 +64,11 @@ class DashboardController extends BaseController
                     ->distinct()
                     ->count('enrollments.course_offering_id')
                 : 0,
+
+            // Not scoped to a session: being locked out is not an academic
+            // event, and someone who cannot log in needs attention regardless
+            // of which semester the portal is showing.
+            'pending_password_resets' => User::whereNotNull('password_reset_requested_at')->count(),
         ]);
 
         return response()->json([

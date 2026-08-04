@@ -39,6 +39,9 @@ class AcademicSessionResource extends JsonResource
             'first_semester_end' => $this->first_semester_end?->toDateString(),
             'second_semester_start' => $this->second_semester_start?->toDateString(),
             'second_semester_end' => $this->second_semester_end?->toDateString(),
+            // Only where the controller asked for it. The admin list uses this
+            // to show what a session actually carries before anyone edits it.
+            'course_offerings_count' => $this->whenCounted('courseOfferings'),
         ];
     }
 }

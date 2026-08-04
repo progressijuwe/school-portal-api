@@ -17,9 +17,18 @@
 |
 */
 
+/*
+ * The fallback is one comma-separated string, not extra arguments. `env()`
+ * takes a key and a single default; a third argument is silently discarded, so
+ * the second dev origin here never actually applied — which bites as soon as
+ * Vite finds 5173 occupied and moves to 5174.
+ */
 $origins = array_values(array_filter(array_map(
     'trim',
-    explode(',', (string) env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173'))
+    explode(',', (string) env(
+        'CORS_ALLOWED_ORIGINS',
+        'http://localhost:5173,http://localhost:5174'
+    ))
 )));
 
 $patterns = array_values(array_filter(array_map(

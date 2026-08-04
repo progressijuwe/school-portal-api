@@ -116,16 +116,25 @@ class LecturerController extends BaseController
             ], 403);
         }
 
-        // The grade relation is a hasOne over a unique enrollment_id, so it can
-        // never return more than one row — a status filter here could only ever
-        // hide that row, never choose between several. The previous filter
-        // listed every status except `rejected`, so once an admin sent a mark
-        // sheet back the lecturer's own scores and the rejection reason
-        // vanished from their screen and the correction could not be made.
+        // The grade relation is loaded unfiltered. It is a hasOne over a unique
+        // enrollment_id, so a status filter could only ever hide that one row,
+        // never choose between several — and the previous filter listed every
+        // status except `rejected`, so once an admin sent a mark sheet back the
+        // lecturer's own scores and the rejection reason vanished from their
+        // screen and the correction could not be made.
+        //
+        // The page size is large because a mark sheet is one document, not a
+        // paged list: "Submit Results" posts every row the lecturer filled in,
+        // so a page that hid part of the class would silently grade only the
+        // visible portion. The ceiling matches the batch endpoint's own
+        // `max:500` rule on the grades array, so the two cannot drift apart.
         $enrollments = Enrollment::where('course_offering_id', $offering->id)
             ->where('status', 'active')
             ->with(['student.department', 'grade'])
-            ->paginate(20);
+            ->join('users', 'users.id', '=', 'enrollments.student_id')
+            ->orderBy('users.name')
+            ->select('enrollments.*')
+            ->paginate(perPage: min($request->integer('per_page', 100), 500));
 
         return response()->json([
             'success' => true,
@@ -188,21 +197,5 @@ class LecturerController extends BaseController
                 'timetable' => $grouped,
             ],
         ]);
-    }
-
-    // Notifications
-    public function notifications(Request $request): JsonResponse
-    {
-        return $this->notificationResponse($request);
-    }
-
-    public function markNotificationRead(Request $request, string $notificationId): JsonResponse
-    {
-        return $this->markReadResponse($request, $notificationId);
-    }
-
-    public function markAllNotificationsRead(Request $request): JsonResponse
-    {
-        return $this->markAllReadResponse($request);
     }
 }

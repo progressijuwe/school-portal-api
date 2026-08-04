@@ -8,8 +8,10 @@ use App\Http\Requests\Admin\StoreCourseRequest;
 use App\Http\Requests\Admin\UpdateCourseRequest;
 use App\Http\Resources\CourseResource;
 use App\Models\Course;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CourseController extends BaseController
 {
@@ -21,9 +23,75 @@ class CourseController extends BaseController
      */
     public function index(Request $request): JsonResponse
     {
+        $courses = $this->filteredCourses($request)
+            ->latest()
+            ->paginate(perPage: min($request->integer('per_page', 12), 50))
+            ->withQueryString();
+
+        return $this->paginated($courses, CourseResource::class, 'Courses retrieved successfully.');
+    }
+
+    /**
+     * Export the current catalogue view as CSV.
+     *
+     * Runs the same filter chain as the table and streams every match, so the
+     * file cannot describe a narrower set than the screen it came from.
+     */
+    public function export(Request $request): StreamedResponse
+    {
+        $query = $this->filteredCourses($request)->orderBy('code');
+
+        return response()->streamDownload(function () use ($query) {
+            $handle = fopen('php://output', 'w');
+
+            // Without a BOM Excel reads the file in the system codepage and
+            // mangles any non-ASCII course title.
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, [
+                'code', 'title', 'credit_units', 'level', 'semester', 'type',
+                'department', 'faculty', 'status', 'lecturer', 'enrolled',
+            ]);
+
+            $query->chunk(200, function ($courses) use ($handle) {
+                foreach ($courses as $course) {
+                    $offering = $course->relationLoaded('offerings')
+                        ? $course->offerings->first()
+                        : null;
+
+                    fputcsv($handle, [
+                        $course->code,
+                        $course->title,
+                        $course->credit_units,
+                        $course->level,
+                        // Both are backed enums, so the backing value is what
+                        // belongs in a CSV cell — the enum itself is not a
+                        // scalar and would not survive the write.
+                        $course->semester->value,
+                        $course->type->value,
+                        $course->department->name,
+                        $course->department->faculty->name,
+                        $course->is_active ? 'active' : 'inactive',
+                        $offering?->lecturer?->name,
+                        $offering !== null ? (int) $offering->enrollments_count : 0,
+                    ]);
+                }
+            });
+
+            fclose($handle);
+        }, 'courses_'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * The filter chain the table and the export both run through, so the two
+     * cannot drift into disagreeing about what is in scope.
+     *
+     * @return Builder<Course>
+     */
+    private function filteredCourses(Request $request): Builder
+    {
         $session = $this->resolveSession($request);
 
-        $courses = Course::with([
+        return Course::with([
             'department.faculty',
             // One offering per course — the one for the session being viewed —
             // carrying its lecturer and a live enrolment count. Limiting an
@@ -56,12 +124,7 @@ class CourseController extends BaseController
             ->when($request->filled('type'), fn ($query) => $query
                 ->where('type', $request->string('type')->toString()))
             ->when($request->filled('is_active'), fn ($query) => $query
-                ->where('is_active', $request->boolean('is_active')))
-            ->latest()
-            ->paginate(perPage: min($request->integer('per_page', 12), 50))
-            ->withQueryString();
-
-        return $this->paginated($courses, CourseResource::class, 'Courses retrieved successfully.');
+                ->where('is_active', $request->boolean('is_active')));
     }
 
     public function store(StoreCourseRequest $request): JsonResponse
