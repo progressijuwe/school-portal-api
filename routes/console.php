@@ -13,8 +13,8 @@ Artisan::command('inspire', function () {
 | Scheduled maintenance
 |--------------------------------------------------------------------------
 |
-| The scheduler runs in production as one of the programs in supervisord.conf,
-| so it starts with the deploy rather than needing a service created by hand.
+| The scheduler runs in production as one of the processes started by start.sh,
+| so it comes up with the deploy rather than needing a service created by hand.
 |
 | onOneServer() takes an atomic cache lock before a command runs, so if the web
 | service is ever scaled past one replica — each with its own scheduler — the

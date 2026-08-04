@@ -10,23 +10,23 @@
 # both run the same migration.
 release: php artisan migrate --force --isolated && php artisan config:cache && php artisan route:cache && php artisan event:cache
 
-# The single process Railway starts. It launches supervisor, which runs the web
-# server, the queue worker and the scheduler together — see supervisord.conf.
-# Kept identical to the `[start]` command in nixpacks.toml so it does not matter
-# which of the two the builder decides to honour.
+# The single process Railway starts. It runs start.sh, which brings up the web
+# server, the queue worker and the scheduler together. Kept identical to the
+# `[start]` command in nixpacks.toml so it does not matter which of the two the
+# builder decides to honour.
 #
-# NOTE: `artisan serve` (inside supervisord.conf) wraps PHP's built-in server,
-# which handles one request at a time. It is fine for a pilot or a small cohort,
-# but it will queue requests under real registration-week load. Before going
-# wide, switch that program to FrankenPHP
+# NOTE: `artisan serve` (inside start.sh) wraps PHP's built-in server, which
+# handles one request at a time. It is fine for a pilot or a small cohort, but
+# it will queue requests under real registration-week load. Before going wide,
+# switch that line to FrankenPHP
 # (`php artisan octane:frankenphp --host=0.0.0.0 --port=$PORT`) or a
 # php-fpm + nginx image.
-web: supervisord -c /app/supervisord.conf
+web: sh start.sh
 
-# The two commands below are what supervisord runs. They are named here so that
+# The two commands below are what start.sh runs. They are named here so that
 # splitting them into their own Railway services later is a matter of pointing a
 # new service at this repo and overriding its start command — at which point
-# drop them from supervisord.conf so they do not run twice.
+# drop them from start.sh so they do not run twice.
 #
 # Queued work: welcome emails, grade notifications, and GPA recomputation.
 # Without a worker running, every queued job sits in the jobs table forever —

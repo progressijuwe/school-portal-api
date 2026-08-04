@@ -4,9 +4,10 @@
 # into the production image.
 
 [phases.setup]
-# supervisor runs the web server, queue worker and scheduler together in this
-# one container — see supervisord.conf for why they are not separate services.
-nixPkgs = ['php82', 'php82Extensions.pdo_mysql', 'php82Extensions.mbstring', 'php82Extensions.gd', 'php82Extensions.intl', 'php82Extensions.bcmath', 'php82Packages.composer', 'supervisor']
+# No process manager here on purpose. `supervisor` resolves at build time but is
+# not on PATH in the runtime image, so the container died instantly with
+# "supervisord: command not found". start.sh uses only sh and php.
+nixPkgs = ['php82', 'php82Extensions.pdo_mysql', 'php82Extensions.mbstring', 'php82Extensions.gd', 'php82Extensions.intl', 'php82Extensions.bcmath', 'php82Packages.composer']
 
 [phases.install]
 # --no-dev keeps PHPUnit, Pint, Larastan and Boost out of the deployed image.
@@ -18,7 +19,10 @@ cmds = ['composer install --no-dev --optimize-autoloader --no-interaction --pref
 # Starts web + queue worker + scheduler. Running the web server directly here
 # would leave queued jobs unprocessed on any deploy that did not also have
 # hand-created worker and scheduler services.
-cmd = 'supervisord -c /app/supervisord.conf'
+#
+# `sh start.sh`, not `./start.sh` — the file has no executable bit when checked
+# out from a Windows commit.
+cmd = 'sh start.sh'
 
 [variables]
 # Laravel reads the container's port from PORT; Railway injects it.
